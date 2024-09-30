@@ -2,6 +2,7 @@
 use std::f32::INFINITY;
 
 use nalgebra_glm::Vec3;
+use std::f32::consts::PI;
 
 use super::camera::Camera;
 use super::framebuffer::{self, Framebuffer};
@@ -28,6 +29,9 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, objects: &[Box<dyn Obje
 }
 
 pub fn render(framebuffer: &mut Framebuffer, objects: &[Box<dyn Object>], camera: &Camera) {
+    const FIELD_OF_VIEW : f32 = PI / 3.0;
+    let PERSPECTIVE_SCALE : f32 = ( FIELD_OF_VIEW / 2.0 ).tan();
+
     let width = framebuffer.width as f32;
     let height = framebuffer.height as f32;
     let aspect_ratio = width / height;
@@ -39,7 +43,8 @@ pub fn render(framebuffer: &mut Framebuffer, objects: &[Box<dyn Object>], camera
             let screen_y = -(2.0 * y as f32) / height + 1.0;
 
             // Adjust for aspect ratio
-            let screen_x = screen_x * aspect_ratio;
+            let screen_x = screen_x * aspect_ratio * PERSPECTIVE_SCALE;
+            let screen_y = screen_y * PERSPECTIVE_SCALE;
 
             // Calculate the direction of the ray for this pixel
             let ray_direction = Vec3::new(screen_x, screen_y, -1.0).normalize();
