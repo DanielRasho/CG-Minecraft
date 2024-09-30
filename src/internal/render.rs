@@ -44,16 +44,13 @@ pub fn render(framebuffer: &mut Framebuffer, objects: &[Box<dyn Object>], camera
             // Calculate the direction of the ray for this pixel
             let ray_direction = Vec3::new(screen_x, screen_y, -1.0).normalize();
 
-            // Cast the ray and get the pixel color
-            let origin = &Vec3::new(0.0, 0.0, 0.0);
-            
             let rotated_direction = camera.change_basis(&ray_direction);
 
             // println!("{},{},{}", ray_direction.x, ray_direction.y, ray_direction.z);
             // println!("{},{},{}", rotated_direction.x, rotated_direction.y, rotated_direction.z);
             // println!("========================");
 
-            let pixel_color = cast_ray(origin, &rotated_direction, objects);
+            let pixel_color = cast_ray(&camera.eye, &rotated_direction, objects);
 
             // Draw the pixel on screen with the returned color
             framebuffer.set_current_color(pixel_color);
