@@ -1,10 +1,7 @@
-use nalgebra_glm::{Vec3};
-use super::material::{Intersect, Material};
-use std::f32::INFINITY;
-
-pub trait Object {
-   fn ray_intersect(&self, ray_origin: &Vec3, ray_direction: &Vec3) -> Intersect;
-}
+use nalgebra_glm::Vec3;
+use super::material::Material;
+use super::intersect::Intersect;
+use super::object::Object;
 
 pub struct Cube {
     pub min: Vec3, // minimum corner of the cube

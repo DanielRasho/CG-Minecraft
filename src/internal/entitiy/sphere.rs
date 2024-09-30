@@ -1,9 +1,8 @@
 use nalgebra_glm::{Vec3, dot};
-use super::material::{Intersect, Material};
+use super::material::Material;
+use super::intersect::Intersect;
+use super::object::Object;
 
-pub trait Object {
-   fn ray_intersect(&self, ray_origin: &Vec3, ray_direction: &Vec3) -> Intersect;
-}
 pub struct Sphere{
     pub center: Vec3,
     pub radius: f32,

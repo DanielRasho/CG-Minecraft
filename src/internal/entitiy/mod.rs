@@ -4,3 +4,4 @@ pub mod cube;
 pub mod object;
 pub mod sphere;
 pub mod grid;
+pub mod intersect;

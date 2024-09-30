@@ -6,11 +6,14 @@ use std::f32::consts::PI;
 
 use super::camera::Camera;
 use super::framebuffer::{self, Framebuffer};
-use super::entitiy::{color::Color, material::{Intersect, Material}};
-use super::entitiy::sphere::{Object};
+use super::entitiy::{color::Color, material::Material};
+use super::entitiy::intersect::Intersect;
+use super::entitiy::object::Object;
 
 pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, objects: &[Box<dyn Object>]) -> Color {
     let mut intersect = Intersect{ 
+        point: Vec3::zeros(),
+        normal: Vec3::zeros(),
         distance: INFINITY, 
         is_intersecting: false, 
         material: Material{

@@ -9,7 +9,8 @@ use internal::framebuffer::Framebuffer;
 use internal::render::render;
 use internal::entitiy::color::Color;
 use internal::entitiy::material::Material;
-use internal::entitiy::sphere::{Sphere, Object};
+use internal::entitiy::sphere::Sphere;
+use internal::entitiy::object::Object;
 
 pub fn start(){
     
@@ -25,7 +26,7 @@ pub fn start(){
     // Window Objects initialization
     let mut framebuffer = Framebuffer::new(window_width, window_height, Color::new(0, 0, 0));
     let mut window = Window::new(
-      "Bears and raytracing",
+      "Minecraft Diorama",
       window_width,
       window_height,
       WindowOptions::default()
