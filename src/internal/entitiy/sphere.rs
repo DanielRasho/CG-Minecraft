@@ -17,45 +17,25 @@ impl Sphere {
 
 impl Object for Sphere{
     fn ray_intersect(&self, ray_origin: &Vec3, ray_direction: &Vec3) -> Intersect {
-        // Calculate the vector from the ray's origin to the sphere's center
-        let l = self.center - ray_origin;
+        let oc = *ray_origin - self.center;
 
-        // Calculate the projection of l onto the ray direction
-        let tca = dot(ray_direction, &l);
+        let a = ray_direction.dot(ray_direction);
+        let b = 2.0 * oc.dot(ray_direction);
+        let c = oc.dot(&oc) - self.radius * self.radius;
 
-        // If tca is negative, the sphere is behind the ray, no intersection
-        if tca < 0.0 {
-            return Intersect::empty();
+        let discriminant = b * b - 4.0 * a * c;
+
+        if discriminant > 0.0 {
+            let t = (-b - discriminant.sqrt()) / (2.0 * a);
+            if t > 0.0 {
+                let point = ray_origin + ray_direction * t;
+                let normal = (point - self.center).normalize();
+                let distance = t;
+
+                return Intersect::new(point, normal, distance, self.material);
+            }
         }
 
-        // Calculate the distance squared from the sphere's center to the ray
-        let d2 = dot(&l, &l) - tca * tca;
-
-        // If the distance is greater than the sphere's radius, no intersection
-        if d2 > self.radius * self.radius {
-            return Intersect::empty();
-        }
-
-        // Calculate thc, the distance from the closest approach to the intersection points
-        let thc = (self.radius * self.radius - d2).sqrt();
-
-        // Calculate the distances to the intersection points along the ray
-        let t0 = tca - thc;
-        let t1 = tca + thc;
-
-        // If both t0 and t1 are negative, the sphere is behind the ray
-        if t0 < 0.0 && t1 < 0.0 {
-            return Intersect::empty();
-        }
-
-        // Determine the distance to the intersection point
-        let distance = if t0 < 0.0 { t1 } else { t0 };
-
-        // Calculate the intersection point and normal
-        let intersection_point = ray_origin + ray_direction * distance;
-        let normal = (intersection_point - self.center).normalize();
-
-        // Create and return the intersection object
-        Intersect::new(intersection_point, normal, distance, self.material)
+        Intersect::empty()
     }
 }
