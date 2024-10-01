@@ -5,21 +5,13 @@ use nalgebra_glm::Vec3;
 use std::f32::consts::PI;
 
 use super::camera::Camera;
-use super::framebuffer::{self, Framebuffer};
+use super::framebuffer::Framebuffer;
 use super::entitiy::{color::Color, material::Material};
 use super::entitiy::intersect::Intersect;
 use super::entitiy::object::Object;
 
 pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, objects: &[Box<dyn Object>]) -> Color {
-    let mut intersect = Intersect{ 
-        point: Vec3::zeros(),
-        normal: Vec3::zeros(),
-        distance: INFINITY, 
-        is_intersecting: false, 
-        material: Material{
-            diffuse : Color::new(66, 135, 245)
-        }
-    };
+    let mut intersect = Intersect::empty();
 
     for object in objects {
         let i = object.ray_intersect(ray_origin, ray_direction);

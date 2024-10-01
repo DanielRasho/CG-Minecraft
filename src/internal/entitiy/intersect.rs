@@ -1,5 +1,6 @@
 use nalgebra_glm::Vec3;
 use super::material::Material;
+use std::f32::INFINITY;
 
 #[derive(Debug, Clone, Copy)]
 #[allow(dead_code)]
@@ -26,7 +27,7 @@ impl Intersect {
         Intersect {
             point: Vec3::zeros(),
             normal: Vec3::zeros(),
-            distance: 0.0,
+            distance: INFINITY,
             is_intersecting: false,
             material: Material::black(),
         }
