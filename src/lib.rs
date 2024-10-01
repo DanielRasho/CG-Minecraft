@@ -11,6 +11,7 @@ use internal::entitiy::color::Color;
 use internal::entitiy::material::Material;
 use internal::entitiy::sphere::Sphere;
 use internal::entitiy::object::Object;
+use internal::entitiy::light::Light;
 
 pub fn start(){
     
@@ -33,18 +34,21 @@ pub fn start(){
     ).unwrap();
     
     // Create an array of Box<dyn Object>
-    let whiteFur = Material{diffuse: Color::new(240, 240, 240)};
-    let blackFur = Material{diffuse: Color::new(10, 10, 10)};
+    let whiteFur = Material{
+        diffuse: Color::new(100, 100, 100),
+        specular: 50.0,
+        albedo: [0.6, 0.3]
+    };
+    let blackFur = Material{
+        diffuse: Color::new(80, 0, 00),
+        specular: 10.0,
+        albedo: [0.9, 0.1]
+    };
 
-    let objects: [Box<dyn Object>; 8] = [
-        Box::new(Sphere{ center: Vec3::new(0.0, 0.0, -10.0), radius: 4.0, material : whiteFur}),// FACE
-        Box::new(Sphere{ center: Vec3::new(0.9, 0.4, -5.0), radius: 0.8, material: blackFur}),  // EYE PATH
-        Box::new(Sphere{ center: Vec3::new(-0.9, 0.4, -5.0), radius: 0.8, material: blackFur}),
-        Box::new(Sphere{ center: Vec3::new(0.0, -0.4, -5.0), radius: 0.3, material: blackFur}), // NOSE
-        Box::new(Sphere{ center: Vec3::new(0.4, 0.1, -3.0), radius: 0.1, material: whiteFur}), // EYE
-        Box::new(Sphere{ center: Vec3::new(-0.4, 0.1, -3.0), radius: 0.1, material: whiteFur}), // EYE
-        Box::new(Sphere{ center: Vec3::new(4.0, 3.5, -14.0), radius: 3.0, material: blackFur}), // EARS
-        Box::new(Sphere{ center: Vec3::new(-4.0, 3.5, -14.0), radius: 3.0, material: blackFur}), // EARS
+    let objects: [Box<dyn Object>; 3] = [
+        Box::new(Sphere{ center: Vec3::new(0.0, 0.0, 0.0), radius: 3.0, material : whiteFur}),// FACE
+        Box::new(Sphere{ center: Vec3::new(0.0, 3.0, -5.0), radius: 1.0, material: blackFur}), // EARS
+        Box::new(Sphere{ center: Vec3::new(-4.0, 1.5, -5.0), radius: 1.0, material: blackFur}), // EARS
     ];
     
     let mut camera = Camera::new(
@@ -52,6 +56,11 @@ pub fn start(){
         Vec3::new(0.0, 0.0, 0.0),
         Vec3::new(0.0, 1.0, 0.0)
     );
+    
+    let light = Light::new(
+        Vec3::new(0.0, 7.0, -7.0),
+        Color::new(255, 255, 255),
+        3.0);
     
     const ROTATION_SPEED : f32 = PI / 10.0;
 
@@ -75,7 +84,7 @@ pub fn start(){
             camera.orbit(0.0, ROTATION_SPEED);
         }
 
-        render(&mut framebuffer, &objects, &camera);
+        render(&mut framebuffer, &objects, &camera, &light);
 
         window
          .update_with_buffer(&framebuffer.buffer, framebuffer_width, framebuffer_height)

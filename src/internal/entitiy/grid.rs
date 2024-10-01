@@ -34,7 +34,9 @@ fn main() {
     // Define the material for the cubes
     let material = Material {
         // Add material properties here
-        diffuse: Color::new(3, 3, 3)
+        diffuse: Color::new(3, 3, 3),
+        specular: 0.0,
+        albedo: [0.0, 0.0]
     };
 
     // Define the width of the cubes
