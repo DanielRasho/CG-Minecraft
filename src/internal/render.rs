@@ -12,39 +12,7 @@ use super::entitiy::object::Object;
 use super::entitiy::light::Light;
 
 const REFLECTION_DEPTH : u32 = 2;
-
-fn reflect(incident: &Vec3, normal: &Vec3) -> Vec3 {
-    incident - 2.0 * incident.dot(normal) * normal
-}
-
-fn cast_shadow(
-    intersect: &Intersect,
-    light: &Light,
-    objects: &[Box<dyn Object>],
-) -> f32 {
-    let light_dir = (light.position - intersect.point).normalize();
-    let shadow_ray_origin = intersect.point + intersect.normal * 1e-4; // Avoid self-shadowing bias
-    let light_distance = (light.position - shadow_ray_origin).magnitude(); // Distance from light to intersection
-
-    let mut shadow_intensity = 0.0;  // Start with no shadow
-
-    for object in objects {
-        let shadow_intersect = object.ray_intersect(&shadow_ray_origin, &light_dir);
-        if shadow_intersect.is_intersecting {
-            // Compute the distance from the intersection to the shadow-casting object
-            let occlusion_distance = shadow_intersect.distance;
-
-            // Calculate shadow attenuation based on the distance between the object and the light source
-            let attenuation = (occlusion_distance / light_distance).clamp(0.0, 1.0); // The farther the object, the smaller the shadow
-
-            // Modify shadow intensity based on the object's distance
-            shadow_intensity = 1.0 * attenuation; // Full shadow intensity when close, less when far
-            break;
-        }
-    }
-
-    shadow_intensity
-}
+const ORIGIN_BIAS : f32 = 1e-4;
 
 pub fn cast_ray(
     ray_origin: &Vec3, 
@@ -52,7 +20,7 @@ pub fn cast_ray(
     objects: &[Box<dyn Object>], 
     light: &Light,
     depth: u32 ) -> Color {
-    if depth > 3 {
+   if depth > 3 {
         return Color::new(25, 25, 120)
     }
 
@@ -83,14 +51,23 @@ pub fn cast_ray(
     let specular = light.color * intersect.material.albedo[1] * specular_intensity * light_intensity;
 
     let mut reflect_color = Color::new(0, 0, 0);
-    let reflectivity = intersect.material.albedo[2];
+    let reflectivity = intersect.material.reflectivity;
     if reflectivity > 0.0 {
         let ray_reflection = reflect_dir.normalize();
         let reflect_origin = intersect.point;
         reflect_color = cast_ray(&reflect_origin, &ray_reflection, objects, light, depth + 1);
     }
+
     
-    ( diffuse + specular ) * (1.0 - reflectivity) + (reflect_color * reflectivity)
+    let mut refract_color = Color::new(0, 0, 0);
+    let transparency = intersect.material.transparency;
+    if transparency > 0.0 {
+        let refract_dir = refract(ray_direction, &intersect.normal, intersect.material.refractive_index);
+        let refract_origin = offset_origin(&intersect, &refract_dir);
+        refract_color = cast_ray(&refract_origin, &refract_dir, objects, light, depth + 1);
+    }
+    
+    ( diffuse + specular ) * (1.0 - reflectivity) + (reflect_color * reflectivity) + ( refract_color * transparency )
 }
 
 pub fn render(framebuffer: &mut Framebuffer, objects: &[Box<dyn Object>], camera: &Camera, light: &Light) {
@@ -123,4 +100,72 @@ pub fn render(framebuffer: &mut Framebuffer, objects: &[Box<dyn Object>], camera
             framebuffer.draw_point(x, y);
         }
     }
+}
+
+fn offset_origin(intersect: &Intersect, direction: &Vec3) -> Vec3 {
+    let offset = intersect.normal * ORIGIN_BIAS;
+    if direction.dot(&intersect.normal) < 0.0 {
+        intersect.point - offset
+    } else {
+        intersect.point + offset
+    }
+}
+
+fn reflect(incident: &Vec3, normal: &Vec3) -> Vec3 {
+    incident - 2.0 * incident.dot(normal) * normal
+}
+
+fn refract(incident: &Vec3, normal: &Vec3, eta_t: f32) -> Vec3 {
+    let cosi = -incident.dot(normal).clamp(-1.0, 1.0); // Clamp cosine of incident angle between -1 and 1
+    let (n_cosi, eta, n_normal);
+
+    if cosi < 0.0 {
+        // Ray is entering the object
+        n_cosi = -cosi;
+        eta = 1.0 / eta_t; // Refractive index ratio for entering the material
+        n_normal = -normal;
+    } else {
+        // Ray is leaving the object
+        n_cosi = cosi;
+        eta = eta_t;  // Assume the ray is exiting into air or vacuum (n=1)
+        n_normal = *normal;
+    }
+
+    let k = 1.0 - eta * eta * (1.0 - n_cosi * n_cosi);
+
+    if k < 0.0 {
+        // Total internal reflection occurs
+        reflect(incident, &n_normal)
+    } else {
+        eta * incident + (eta * n_cosi - k.sqrt()) * n_normal
+    }
+}
+
+fn cast_shadow(
+    intersect: &Intersect,
+    light: &Light,
+    objects: &[Box<dyn Object>],
+) -> f32 {
+    let light_dir = (light.position - intersect.point).normalize();
+    let shadow_ray_origin = intersect.point + intersect.normal * 1e-4; // Avoid self-shadowing bias
+    let light_distance = (light.position - shadow_ray_origin).magnitude(); // Distance from light to intersection
+
+    let mut shadow_intensity = 0.0;  // Start with no shadow
+
+    for object in objects {
+        let shadow_intersect = object.ray_intersect(&shadow_ray_origin, &light_dir);
+        if shadow_intersect.is_intersecting {
+            // Compute the distance from the intersection to the shadow-casting object
+            let occlusion_distance = shadow_intersect.distance;
+
+            // Calculate shadow attenuation based on the distance between the object and the light source
+            let attenuation = (occlusion_distance / light_distance).clamp(0.0, 1.0); // The farther the object, the smaller the shadow
+
+            // Modify shadow intensity based on the object's distance
+            shadow_intensity = 1.0 * attenuation; // Full shadow intensity when close, less when far
+            break;
+        }
+    }
+
+    shadow_intensity
 }
