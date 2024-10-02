@@ -63,6 +63,7 @@ pub fn start(){
         3.0);
     
     const ROTATION_SPEED : f32 = PI / 10.0;
+    const ZOOM_SPEED : f32 = 0.2;
 
     // RENDER LOOP
     while window.is_open() {
@@ -84,7 +85,17 @@ pub fn start(){
             camera.orbit(0.0, ROTATION_SPEED);
         }
 
-        render(&mut framebuffer, &objects, &camera, &light);
+        // camera zoom
+        if window.is_key_down(Key::J) {
+            camera.zoom(ZOOM_SPEED);
+        }
+        if window.is_key_down(Key::K) {
+            camera.zoom(-ZOOM_SPEED);
+        }
+
+        if camera.check_if_changed() {
+            render(&mut framebuffer, &objects, &camera, &light);
+        }
 
         window
          .update_with_buffer(&framebuffer.buffer, framebuffer_width, framebuffer_height)

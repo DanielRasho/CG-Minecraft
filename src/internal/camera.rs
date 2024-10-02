@@ -4,7 +4,8 @@ use std::f32::consts::PI;
 pub struct Camera {
     pub eye: Vec3, // Camera position
     pub center: Vec3, // Subject origin position
-    pub up: Vec3 // The upwards direction
+    pub up: Vec3, // The upwards direction
+    pub has_changed: bool
 }
 
 impl Camera {
@@ -12,7 +13,8 @@ impl Camera {
         Camera {
             eye,
             center,
-            up
+            up,
+            has_changed: true,
         }
     }
     
@@ -52,6 +54,22 @@ impl Camera {
             -radius * new_pitch.sin(),
             radius * new_yaw.sin() * new_pitch.cos()
         );
+        self.has_changed = true;
         self.eye = new_eye;
+    }
+
+    pub fn zoom(&mut self, delta: f32) {
+        let direction = (self.center - self.eye).normalize();
+        self.eye += direction * delta;
+        self.has_changed = true;
+    }
+
+    pub fn check_if_changed(&mut self) -> bool {
+        if self.has_changed {
+            self.has_changed = false;
+            true
+        } else {
+            false
+        }
     }
 }
