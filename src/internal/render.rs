@@ -1,4 +1,4 @@
-
+use rayon::prelude::*;
 use std::f32::INFINITY;
 
 use nalgebra_glm::Vec3;
@@ -17,7 +17,7 @@ const ORIGIN_BIAS : f32 = 1e-4;
 pub fn cast_ray(
     ray_origin: &Vec3, 
     ray_direction: &Vec3, 
-    objects: &[Box<dyn Object>], 
+    objects: &[Box<dyn Object + Sync>], 
     light: &Light,
     depth: u32 ) -> Color {
    if depth > 3 {
@@ -70,36 +70,34 @@ pub fn cast_ray(
     ( diffuse + specular ) * (1.0 - reflectivity) + (reflect_color * reflectivity) + ( refract_color * transparency )
 }
 
-pub fn render(framebuffer: &mut Framebuffer, objects: &[Box<dyn Object>], camera: &Camera, light: &Light) {
-    const FIELD_OF_VIEW : f32 = PI / 3.0;
-    let PERSPECTIVE_SCALE : f32 = ( FIELD_OF_VIEW / 2.0 ).tan();
+pub fn render(framebuffer: &mut Framebuffer, objects: &[Box<dyn Object + Sync>], camera: &Camera, light: &Light) {
+    const FIELD_OF_VIEW: f32 = PI / 3.0;
+    let PERSPECTIVE_SCALE: f32 = (FIELD_OF_VIEW / 2.0).tan();
 
     let width = framebuffer.width as f32;
     let height = framebuffer.height as f32;
     let aspect_ratio = width / height;
 
-    for y in 0..framebuffer.height {
-        for x in 0..framebuffer.width {
+    // Process each row of the framebuffer in parallel
+    framebuffer.buffer.par_chunks_mut(framebuffer.width as usize).enumerate().for_each(|(y, row)| {
+        // Map the pixel coordinate to screen space [-1, 1]
+        let screen_y = -(2.0 * y as f32) / height + 1.0;
+        let screen_y = screen_y * PERSPECTIVE_SCALE;
+
+        row.iter_mut().enumerate().for_each(|(x, pixel)| {
             // Map the pixel coordinate to screen space [-1, 1]
             let screen_x = (2.0 * x as f32) / width - 1.0;
-            let screen_y = -(2.0 * y as f32) / height + 1.0;
-
-            // Adjust for aspect ratio
             let screen_x = screen_x * aspect_ratio * PERSPECTIVE_SCALE;
-            let screen_y = screen_y * PERSPECTIVE_SCALE;
 
             // Calculate the direction of the ray for this pixel
             let ray_direction = Vec3::new(screen_x, screen_y, -1.0).normalize();
-
             let rotated_direction = camera.change_basis(&ray_direction);
 
+            // Cast the ray and get the pixel color
             let pixel_color = cast_ray(&camera.eye, &rotated_direction, objects, light, REFLECTION_DEPTH);
-
-            // Draw the pixel on screen with the returned color
-            framebuffer.set_current_color(pixel_color);
-            framebuffer.draw_point(x, y);
-        }
-    }
+            *pixel = pixel_color.to_hex(); // Convert color to u32 and assign to pixel
+        });
+    });
 }
 
 fn offset_origin(intersect: &Intersect, direction: &Vec3) -> Vec3 {
@@ -144,7 +142,7 @@ fn refract(incident: &Vec3, normal: &Vec3, eta_t: f32) -> Vec3 {
 fn cast_shadow(
     intersect: &Intersect,
     light: &Light,
-    objects: &[Box<dyn Object>],
+    objects: &[Box<dyn Object + Sync>],
 ) -> f32 {
     let light_dir = (light.position - intersect.point).normalize();
     let shadow_ray_origin = intersect.point + intersect.normal * 1e-4; // Avoid self-shadowing bias

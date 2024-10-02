@@ -38,7 +38,7 @@ pub fn start(){
         diffuse: Color::new(100, 100, 100),
         specular: 50.0,
         albedo: [0.6, 0.3],
-        reflectivity: 0.0,
+        reflectivity: 0.2,
         transparency: 0.0,
         refractive_index: 1.0
     };
@@ -51,7 +51,7 @@ pub fn start(){
         refractive_index: 1.0
     };
 
-    let objects: [Box<dyn Object>; 3] = [
+    let objects: [Box<dyn Object + Sync>; 3] = [
         Box::new(Sphere{ center: Vec3::new(0.0, 0.0, 0.0), radius: 3.0, material : whiteFur}),// FACE
         Box::new(Sphere{ center: Vec3::new(0.0, 3.0, -5.0), radius: 1.0, material: blackFur}), // EARS
         Box::new(Sphere{ center: Vec3::new(-4.0, 1.5, -5.0), radius: 1.0, material: blackFur}), // EARS
