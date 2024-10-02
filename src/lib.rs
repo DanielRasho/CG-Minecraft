@@ -37,12 +37,12 @@ pub fn start(){
     let whiteFur = Material{
         diffuse: Color::new(100, 100, 100),
         specular: 50.0,
-        albedo: [0.6, 0.3]
+        albedo: [0.6, 0.3, 0.5]
     };
     let blackFur = Material{
         diffuse: Color::new(80, 0, 00),
         specular: 10.0,
-        albedo: [0.9, 0.1]
+        albedo: [0.9, 0.1, 0.2]
     };
 
     let objects: [Box<dyn Object>; 3] = [

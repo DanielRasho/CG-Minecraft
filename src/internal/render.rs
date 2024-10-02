@@ -11,6 +11,8 @@ use super::entitiy::intersect::Intersect;
 use super::entitiy::object::Object;
 use super::entitiy::light::Light;
 
+const REFLECTION_DEPTH : u32 = 2;
+
 fn reflect(incident: &Vec3, normal: &Vec3) -> Vec3 {
     incident - 2.0 * incident.dot(normal) * normal
 }
@@ -44,7 +46,16 @@ fn cast_shadow(
     shadow_intensity
 }
 
-pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, objects: &[Box<dyn Object>], light: &Light) -> Color {
+pub fn cast_ray(
+    ray_origin: &Vec3, 
+    ray_direction: &Vec3, 
+    objects: &[Box<dyn Object>], 
+    light: &Light,
+    depth: u32 ) -> Color {
+    if depth > 3 {
+        return Color::new(25, 25, 120)
+    }
+
     let mut intersect = Intersect::empty();
 
     for object in objects {
@@ -55,7 +66,7 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, objects: &[Box<dyn Obje
     }
 
     if !intersect.is_intersecting {
-        return Color::new(3, 3, 3)
+        return Color::new(25, 25, 120)
     }
 
     let light_dir = (light.position - intersect.point).normalize();
@@ -70,8 +81,16 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, objects: &[Box<dyn Obje
 
     let specular_intensity = view_dir.dot(&reflect_dir).max(0.0).powf(intersect.material.specular);
     let specular = light.color * intersect.material.albedo[1] * specular_intensity * light_intensity;
+
+    let mut reflect_color = Color::new(0, 0, 0);
+    let reflectivity = intersect.material.albedo[2];
+    if reflectivity > 0.0 {
+        let ray_reflection = reflect_dir.normalize();
+        let reflect_origin = intersect.point;
+        reflect_color = cast_ray(&reflect_origin, &ray_reflection, objects, light, depth + 1);
+    }
     
-    diffuse + specular
+    ( diffuse + specular ) * (1.0 - reflectivity) + (reflect_color * reflectivity)
 }
 
 pub fn render(framebuffer: &mut Framebuffer, objects: &[Box<dyn Object>], camera: &Camera, light: &Light) {
@@ -97,7 +116,7 @@ pub fn render(framebuffer: &mut Framebuffer, objects: &[Box<dyn Object>], camera
 
             let rotated_direction = camera.change_basis(&ray_direction);
 
-            let pixel_color = cast_ray(&camera.eye, &rotated_direction, objects, light);
+            let pixel_color = cast_ray(&camera.eye, &rotated_direction, objects, light, REFLECTION_DEPTH);
 
             // Draw the pixel on screen with the returned color
             framebuffer.set_current_color(pixel_color);
