@@ -9,10 +9,9 @@ use internal::framebuffer::Framebuffer;
 use internal::render::render;
 use internal::entitiy::color::Color;
 use internal::entitiy::material::Material;
-use internal::entitiy::sphere::Sphere;
 use internal::entitiy::cube::Cube;
 use internal::entitiy::object::Object;
-use internal::entitiy::light::Light;
+use internal::entitiy::light::{Light, AmbientLight};
 
 pub fn start(){
     
@@ -67,6 +66,8 @@ pub fn start(){
         Vec3::new(0.0, 7.0, 7.0),
         Color::new(255, 255, 255),
         3.0);
+
+    let ambient_light = AmbientLight::new(Color::new(255, 255, 255), 0.5);
     
     const ROTATION_SPEED : f32 = PI / 10.0;
     const ZOOM_SPEED : f32 = 0.2;
@@ -100,7 +101,7 @@ pub fn start(){
         }
 
         if camera.check_if_changed() {
-            render(&mut framebuffer, &objects, &camera, &light);
+            render(&mut framebuffer, &objects, &camera, &light, &ambient_light);
         }
 
         window

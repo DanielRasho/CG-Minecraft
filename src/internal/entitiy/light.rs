@@ -16,3 +16,18 @@ impl Light {
         }
     }
 }
+
+pub struct AmbientLight{
+    pub color: Color,
+    pub intensity: f32,
+}
+
+impl AmbientLight {
+    pub fn new(color: Color, intensity: f32) -> Self {
+        AmbientLight {
+            color,
+            intensity,
+        }
+    }
+}
+

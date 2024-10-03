@@ -9,7 +9,7 @@ use super::framebuffer::Framebuffer;
 use super::entitiy::{color::Color, material::Material};
 use super::entitiy::intersect::Intersect;
 use super::entitiy::object::Object;
-use super::entitiy::light::Light;
+use super::entitiy::light::{Light, AmbientLight};
 
 const REFLECTION_DEPTH : u32 = 2;
 const ORIGIN_BIAS : f32 = 1e-4;
@@ -19,9 +19,10 @@ pub fn cast_ray(
     ray_direction: &Vec3, 
     objects: &[Box<dyn Object + Sync>], 
     light: &Light,
+    ambient_light: &AmbientLight,
     depth: u32 ) -> Color {
-   if depth > 3 {
-        return Color::new(25, 25, 120)
+        if depth > 3 {
+        return Color::new(25, 25, 120);
     }
 
     let mut intersect = Intersect::empty();
@@ -29,14 +30,15 @@ pub fn cast_ray(
     for object in objects {
         let i = object.ray_intersect(ray_origin, ray_direction);
         if i.is_intersecting && i.distance < intersect.distance {
-            intersect = i
+            intersect = i;
         }        
     }
 
     if !intersect.is_intersecting {
-        return Color::new(25, 25, 120)
+        return Color::new(25, 25, 120);
     }
 
+    // Calculate diffuse and specular light
     let light_dir = (light.position - intersect.point).normalize();
     let view_dir = (ray_origin - intersect.point).normalize();
     let reflect_dir = reflect(&-light_dir, &intersect.normal);
@@ -50,27 +52,34 @@ pub fn cast_ray(
     let specular_intensity = view_dir.dot(&reflect_dir).max(0.0).powf(intersect.material.specular);
     let specular = light.color * intersect.material.albedo[1] * specular_intensity * light_intensity;
 
+    // Calculate reflection
     let mut reflect_color = Color::new(0, 0, 0);
     let reflectivity = intersect.material.reflectivity;
     if reflectivity > 0.0 {
         let ray_reflection = reflect_dir.normalize();
         let reflect_origin = intersect.point;
-        reflect_color = cast_ray(&reflect_origin, &ray_reflection, objects, light, depth + 1);
+        reflect_color = cast_ray(&reflect_origin, &ray_reflection, objects, light, ambient_light, depth + 1);
     }
 
-    
+    // Calculate refraction
     let mut refract_color = Color::new(0, 0, 0);
     let transparency = intersect.material.transparency;
     if transparency > 0.0 {
         let refract_dir = refract(ray_direction, &intersect.normal, intersect.material.refractive_index);
         let refract_origin = offset_origin(&intersect, &refract_dir);
-        refract_color = cast_ray(&refract_origin, &refract_dir, objects, light, depth + 1);
+        refract_color = cast_ray(&refract_origin, &refract_dir, objects, light, ambient_light, depth + 1);
     }
     
-    ( diffuse + specular ) * (1.0 - reflectivity) + (reflect_color * reflectivity) + ( refract_color * transparency )
+    // Calculate ambient light contribution
+    let ambient = ambient_light.color * intersect.material.albedo[0] * ambient_light.intensity;  // Ambient is modulated by albedo
+
+    // Combine the lighting effects
+    (ambient + diffuse + specular) * (1.0 - reflectivity) 
+        + (reflect_color * reflectivity) 
+        + (refract_color * transparency)
 }
 
-pub fn render(framebuffer: &mut Framebuffer, objects: &[Box<dyn Object + Sync>], camera: &Camera, light: &Light) {
+pub fn render(framebuffer: &mut Framebuffer, objects: &[Box<dyn Object + Sync>], camera: &Camera, light: &Light, ambient_light: &AmbientLight) {
     const FIELD_OF_VIEW: f32 = PI / 3.0;
     let PERSPECTIVE_SCALE: f32 = (FIELD_OF_VIEW / 2.0).tan();
 
@@ -94,7 +103,7 @@ pub fn render(framebuffer: &mut Framebuffer, objects: &[Box<dyn Object + Sync>],
             let rotated_direction = camera.change_basis(&ray_direction);
 
             // Cast the ray and get the pixel color
-            let pixel_color = cast_ray(&camera.eye, &rotated_direction, objects, light, REFLECTION_DEPTH);
+            let pixel_color = cast_ray(&camera.eye, &rotated_direction, objects, light, ambient_light, REFLECTION_DEPTH);
             *pixel = pixel_color.to_hex(); // Convert color to u32 and assign to pixel
         });
     });
