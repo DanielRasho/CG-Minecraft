@@ -10,6 +10,7 @@ use internal::render::render;
 use internal::entitiy::color::Color;
 use internal::entitiy::material::Material;
 use internal::entitiy::sphere::Sphere;
+use internal::entitiy::cube::Cube;
 use internal::entitiy::object::Object;
 use internal::entitiy::light::Light;
 
@@ -34,7 +35,7 @@ pub fn start(){
     ).unwrap();
     
     // Create an array of Box<dyn Object>
-    let whiteFur = Material{
+    let white_fur = Material{
         diffuse: Color::new(100, 100, 100),
         specular: 50.0,
         albedo: [0.6, 0.3],
@@ -42,7 +43,7 @@ pub fn start(){
         transparency: 0.0,
         refractive_index: 1.0
     };
-    let blackFur = Material{
+    let black_fur = Material{
         diffuse: Color::new(80, 0, 00),
         specular: 10.0,
         albedo: [0.9, 0.1],
@@ -51,10 +52,9 @@ pub fn start(){
         refractive_index: 1.0
     };
 
-    let objects: [Box<dyn Object + Sync>; 3] = [
-        Box::new(Sphere{ center: Vec3::new(0.0, 0.0, 0.0), radius: 3.0, material : whiteFur}),// FACE
-        Box::new(Sphere{ center: Vec3::new(0.0, 3.0, -5.0), radius: 1.0, material: blackFur}), // EARS
-        Box::new(Sphere{ center: Vec3::new(-4.0, 1.5, -5.0), radius: 1.0, material: blackFur}), // EARS
+    let objects: [Box<dyn Object + Sync>; 2] = [
+        Box::new(Cube{ max: Vec3::new(0.5,0.5,0.5), min: Vec3::new(-0.5, -0.5, -0.5), material: white_fur}), // EARS
+        Box::new(Cube{ max: Vec3::new(1.0,2.0,2.5), min: Vec3::new(0.0, 1.0, 1.5), material: white_fur}), // EARS
     ];
     
     let mut camera = Camera::new(
@@ -64,7 +64,7 @@ pub fn start(){
     );
     
     let light = Light::new(
-        Vec3::new(0.0, 7.0, -7.0),
+        Vec3::new(0.0, 7.0, 7.0),
         Color::new(255, 255, 255),
         3.0);
     
