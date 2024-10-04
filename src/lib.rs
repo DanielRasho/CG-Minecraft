@@ -118,13 +118,11 @@ pub fn start(){
             day_angle = (day_angle + DAY_SPEED) % (2.0 * PI);
             render(&mut framebuffer, &objects, &camera, &lights, day_angle, &ambient_light);
         }
-        if window.is_key_down(Key::N) {
+        else if window.is_key_down(Key::N) {
             day_angle = (day_angle - DAY_SPEED) % (2.0 * PI);
             render(&mut framebuffer, &objects, &camera, &lights, day_angle, &ambient_light);
         }
-        println!("{}", day_angle);
-
-        if camera.check_if_changed() {
+        else if camera.check_if_changed() {
             render(&mut framebuffer, &objects, &camera, &lights, day_angle, &ambient_light);
         }
 
