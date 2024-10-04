@@ -13,7 +13,7 @@ use internal::entitiy::material::{Material, Diffuse};
 use internal::entitiy::cube::Cube;
 use internal::entitiy::object::Object;
 use internal::entitiy::light::{AmbientLight, DayLight, Light, PointLight};
-use internal::entitiy::texture::{BOOK_SHELF, CHEST, COBBLESTONE, CRAFTING_TABLE, FURNACE, GLASS, GRASS, JUKEBOX, OAK_LOG, OAK_PLANKS, DARK_OAK_PLANKS};
+use internal::entitiy::texture::{BOOK_SHELF, CHEST, COBBLESTONE, CRAFTING_TABLE, DARK_OAK_PLANKS, FURNACE, GLASS, GLOWSTONE, GRASS, JUKEBOX, OAK_LOG, OAK_PLANKS};
 use internal::entitiy::grid::{self, Grid};
 
 pub fn start(){
@@ -74,7 +74,7 @@ pub fn start(){
     });
 
     let dark_oak_planks = Arc::new (Material {
-        diffuse: Diffuse::Texture(OAK_PLANKS.clone()),
+        diffuse: Diffuse::Texture(DARK_OAK_PLANKS.clone()),
         specular: 10.0,
         albedo: [0.9, 0.1],
         reflectivity: 0.2,
@@ -84,6 +84,23 @@ pub fn start(){
 
     let furnace = Arc::new (Material {
         diffuse: Diffuse::Texture(FURNACE.clone()),
+        specular: 10.0,
+        albedo: [0.9, 0.1],
+        reflectivity: 0.2,
+        transparency: 0.0,
+        refractive_index: 1.0,
+    });
+
+    let book_shelf = Arc::new (Material {
+        diffuse: Diffuse::Texture(BOOK_SHELF.clone()),
+        specular: 10.0,
+        albedo: [0.9, 0.1],
+        reflectivity: 0.2,
+        transparency: 0.0,
+        refractive_index: 1.0,
+    });
+    let jukebox = Arc::new (Material {
+        diffuse: Diffuse::Texture(JUKEBOX.clone()),
         specular: 10.0,
         albedo: [0.9, 0.1],
         reflectivity: 0.2,
@@ -118,7 +135,16 @@ pub fn start(){
         refractive_index: 1.0,
     });
 
-    let mut diorama = Grid::new(1.0, 9, 11, 10);
+    let glowstone = Arc::new (Material {
+        diffuse: Diffuse::Texture(GLOWSTONE.clone()),
+        specular: 10.0,
+        albedo: [0.9, 0.1],
+        reflectivity: 0.2,
+        transparency: 0.0,
+        refractive_index: 1.0,
+    });
+
+    let mut diorama = Grid::new(1.0, 11, 9, 10);
     diorama.add_layer(0, &vec![
         (0, 0, Arc::clone(&grass)),
         (1, 0, Arc::clone(&grass)),
@@ -272,9 +298,176 @@ pub fn start(){
         (7, 5, Arc::clone(&oak_planks)),
         (7, 6, Arc::clone(&oak_planks)),
         (7, 7, Arc::clone(&oak_planks)),
+
+        (6, 5, Arc::clone(&furnace)),
+
+        (6, 6, Arc::clone(&dark_oak_planks)),
     ]);
     
-    diorama.add_layer(4, &vec![]);
+    diorama.add_layer(4, &vec![
+        (1, 1, Arc::clone(&oak_log)),
+        (7, 1, Arc::clone(&oak_log)),
+        (7, 8, Arc::clone(&oak_log)),
+
+        (1, 2, Arc::clone(&oak_planks)),
+
+        (2, 1, Arc::clone(&oak_planks)),
+        (3, 1, Arc::clone(&oak_planks)),
+        (4, 1, Arc::clone(&oak_planks)),
+        (5, 1, Arc::clone(&oak_planks)),
+        (6, 1, Arc::clone(&oak_planks)),
+
+        (7, 2, Arc::clone(&oak_planks)),
+        (7, 3, Arc::clone(&oak_planks)),
+        (7, 4, Arc::clone(&oak_planks)),
+        (7, 5, Arc::clone(&oak_planks)),
+        (7, 6, Arc::clone(&glass)),
+        (7, 7, Arc::clone(&oak_planks)),
+
+        (6, 5, Arc::clone(&dark_oak_planks)),
+    ]);
+
+    diorama.add_layer(5, &vec![
+        (1, 1, Arc::clone(&oak_log)),
+        (7, 1, Arc::clone(&oak_log)),
+        (7, 8, Arc::clone(&oak_log)),
+
+        (1, 2, Arc::clone(&oak_planks)),
+
+        (2, 1, Arc::clone(&oak_planks)),
+        (3, 1, Arc::clone(&oak_planks)),
+        (4, 1, Arc::clone(&oak_planks)),
+        (5, 1, Arc::clone(&oak_planks)),
+        (6, 1, Arc::clone(&oak_planks)),
+
+        (7, 2, Arc::clone(&oak_planks)),
+        (7, 3, Arc::clone(&oak_planks)),
+        (7, 4, Arc::clone(&oak_planks)),
+        (7, 5, Arc::clone(&oak_planks)),
+        (7, 6, Arc::clone(&oak_planks)),
+        (7, 7, Arc::clone(&oak_planks)),
+
+        (6, 4, Arc::clone(&dark_oak_planks)),
+        
+        (3, 5, Arc::clone(&dark_oak_planks)),
+        (4, 5, Arc::clone(&dark_oak_planks)),
+        (5, 5, Arc::clone(&dark_oak_planks)),
+
+        (2, 4, Arc::clone(&dark_oak_planks)),
+        (3, 4, Arc::clone(&dark_oak_planks)),
+        (4, 4, Arc::clone(&dark_oak_planks)),
+        (5, 4, Arc::clone(&dark_oak_planks)),
+
+        (2, 3, Arc::clone(&dark_oak_planks)),
+        (3, 3, Arc::clone(&dark_oak_planks)),
+        (4, 3, Arc::clone(&dark_oak_planks)),
+        (5, 3, Arc::clone(&dark_oak_planks)),
+
+        (2, 2, Arc::clone(&glowstone)),
+        (3, 2, Arc::clone(&dark_oak_planks)),
+        (4, 2, Arc::clone(&dark_oak_planks)),
+        (5, 2, Arc::clone(&dark_oak_planks)),
+        (6, 2, Arc::clone(&glowstone)),
+    ]);
+
+    diorama.add_layer(6, &vec![
+        (1, 1, Arc::clone(&oak_log)),
+        (7, 1, Arc::clone(&oak_log)),
+        (7, 8, Arc::clone(&oak_log)),
+
+        (1, 2, Arc::clone(&oak_planks)),
+
+        (2, 1, Arc::clone(&glass)),
+        (3, 1, Arc::clone(&glass)),
+        (4, 1, Arc::clone(&glass)),
+        (5, 1, Arc::clone(&glass)),
+        (6, 1, Arc::clone(&glass)),
+
+        (7, 2, Arc::clone(&oak_planks)),
+        (7, 3, Arc::clone(&oak_planks)),
+        (7, 4, Arc::clone(&oak_planks)),
+        (7, 5, Arc::clone(&oak_planks)),
+        (7, 6, Arc::clone(&oak_planks)),
+        (7, 7, Arc::clone(&oak_planks)),
+
+        (6, 3, Arc::clone(&jukebox)),
+
+        (2, 2, Arc::clone(&book_shelf)),
+        (2, 3, Arc::clone(&book_shelf)),
+    ]);
+    
+    diorama.add_layer(7, &vec![
+        (2, 1, Arc::clone(&oak_planks)),
+        (3, 1, Arc::clone(&glass)),
+        (4, 1, Arc::clone(&glass)),
+        (5, 1, Arc::clone(&glass)),
+        (6, 1, Arc::clone(&oak_planks)),
+
+        (1, 0, Arc::clone(&dark_oak_planks)),
+        (1, 1, Arc::clone(&dark_oak_planks)),
+        (1, 2, Arc::clone(&dark_oak_planks)),
+        (1, 3, Arc::clone(&dark_oak_planks)),
+        (1, 4, Arc::clone(&dark_oak_planks)),
+
+        (7, 0, Arc::clone(&dark_oak_planks)),
+        (7, 1, Arc::clone(&dark_oak_planks)),
+        (7, 2, Arc::clone(&dark_oak_planks)),
+        (7, 3, Arc::clone(&dark_oak_planks)),
+        (7, 4, Arc::clone(&dark_oak_planks)),
+        (7, 5, Arc::clone(&dark_oak_planks)),
+        (7, 6, Arc::clone(&dark_oak_planks)),
+        (7, 7, Arc::clone(&dark_oak_planks)),
+        (7, 8, Arc::clone(&dark_oak_planks)),
+    ]);
+
+    diorama.add_layer(8, &vec![
+        (3, 1, Arc::clone(&oak_planks)),
+        (4, 1, Arc::clone(&glass)),
+        (5, 1, Arc::clone(&oak_planks)),
+
+        (2, 0, Arc::clone(&dark_oak_planks)),
+        (2, 1, Arc::clone(&dark_oak_planks)),
+        (2, 2, Arc::clone(&dark_oak_planks)),
+        (2, 3, Arc::clone(&dark_oak_planks)),
+        (2, 4, Arc::clone(&dark_oak_planks)),
+        (2, 5, Arc::clone(&dark_oak_planks)),
+
+        (6, 0, Arc::clone(&dark_oak_planks)),
+        (6, 1, Arc::clone(&dark_oak_planks)),
+        (6, 2, Arc::clone(&dark_oak_planks)),
+        (6, 3, Arc::clone(&dark_oak_planks)),
+        (6, 4, Arc::clone(&dark_oak_planks)),
+        (6, 5, Arc::clone(&dark_oak_planks)),
+        (6, 6, Arc::clone(&dark_oak_planks)),
+        (6, 7, Arc::clone(&dark_oak_planks)),
+    ]);
+    diorama.add_layer(9, &vec![
+        (4, 0, Arc::clone(&dark_oak_planks)),
+
+        (3, 0, Arc::clone(&dark_oak_planks)),
+        (3, 1, Arc::clone(&dark_oak_planks)),
+        (3, 2, Arc::clone(&dark_oak_planks)),
+        (3, 3, Arc::clone(&dark_oak_planks)),
+        (3, 4, Arc::clone(&dark_oak_planks)),
+        (3, 5, Arc::clone(&dark_oak_planks)),
+
+        (5, 0, Arc::clone(&dark_oak_planks)),
+        (5, 1, Arc::clone(&dark_oak_planks)),
+        (5, 2, Arc::clone(&dark_oak_planks)),
+        (5, 3, Arc::clone(&dark_oak_planks)),
+        (5, 4, Arc::clone(&dark_oak_planks)),
+        (5, 5, Arc::clone(&dark_oak_planks)),
+        (5, 6, Arc::clone(&dark_oak_planks)),
+    ]);
+    diorama.add_layer(10, &vec![
+
+        (4, 0, Arc::clone(&dark_oak_planks)),
+        (4, 1, Arc::clone(&dark_oak_planks)),
+        (4, 2, Arc::clone(&dark_oak_planks)),
+        (4, 3, Arc::clone(&dark_oak_planks)),
+        (4, 4, Arc::clone(&dark_oak_planks)),
+        (4, 5, Arc::clone(&dark_oak_planks)),
+    ]);
     
     let mut camera = Camera::new(
         Vec3::new(0.0, 0.0, 20.0),
@@ -282,17 +475,11 @@ pub fn start(){
         Vec3::new(0.0, 1.0, 0.0)
     );
     
-    let lights: [Box<dyn Light + Sync>; 2] = [
+    let lights: [Box<dyn Light + Sync>; 1] = [
         Box::new(
             PointLight::new(
             Vec3::new(0.0, 7.0, 7.0),
             Color::new(255, 255, 255),
-            1.0)
-        ),
-        Box::new(
-            PointLight::new(
-            Vec3::new(0.0, 7.0, 7.0),
-            Color::new(10, 255, 10),
             1.0)
         ),
     ];
