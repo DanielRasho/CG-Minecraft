@@ -39,7 +39,7 @@ pub fn start(){
     // Create an array of Box<dyn Object>
     let grass = Arc::new( Material {
         diffuse: Diffuse::Texture(GRASS.clone()),
-        specular: 10.0,
+        specular: 80.0,
         albedo: [0.6, 0.3],
         reflectivity: 0.0,
         transparency: 0.0,
@@ -48,16 +48,16 @@ pub fn start(){
     
     let cobbleston = Arc::new (Material {
         diffuse: Diffuse::Texture(COBBLESTONE.clone()),
-        specular: 10.0,
-        albedo: [0.9, 0.1],
-        reflectivity: 0.2,
+        specular: 50.0,
+        albedo: [1.0, 0.0],
+        reflectivity: 0.0,
         transparency: 0.0,
         refractive_index: 1.0,
     });
 
     let oak_log = Arc::new (Material {
         diffuse: Diffuse::Texture(OAK_LOG.clone()),
-        specular: 10.0,
+        specular: 0.5,
         albedo: [0.9, 0.1],
         reflectivity: 0.2,
         transparency: 0.0,
@@ -66,8 +66,8 @@ pub fn start(){
 
     let oak_planks = Arc::new (Material {
         diffuse: Diffuse::Texture(OAK_PLANKS.clone()),
-        specular: 10.0,
-        albedo: [0.9, 0.1],
+        specular: 50.0,
+        albedo: [1.0, 0.0],
         reflectivity: 0.2,
         transparency: 0.0,
         refractive_index: 1.0,
@@ -128,17 +128,17 @@ pub fn start(){
 
     let glass = Arc::new (Material {
         diffuse: Diffuse::Texture(GLASS.clone()),
-        specular: 10.0,
-        albedo: [0.9, 0.1],
-        reflectivity: 0.2,
-        transparency: 0.0,
-        refractive_index: 1.0,
+        specular: 8.0,
+        albedo: [0.2, 0.8],
+        reflectivity: 0.0,
+        transparency: 2.0,
+        refractive_index: 1.5,
     });
 
     let glowstone = Arc::new (Material {
         diffuse: Diffuse::Texture(GLOWSTONE.clone()),
-        specular: 10.0,
-        albedo: [0.9, 0.1],
+        specular: 80.0,
+        albedo: [0.1, 0.9],
         reflectivity: 0.2,
         transparency: 0.0,
         refractive_index: 1.0,
@@ -478,15 +478,15 @@ pub fn start(){
     let lights: [Box<dyn Light + Sync>; 2] = [
         Box::new(
             PointLight::new(
-            Vec3::new(-0.5, -2.0, 1.5),
+            Vec3::new(-0.5, -2.0, 2.0),
             Color::new(242, 130, 39),
-            0.5)
+            0.3)
         ),
         Box::new(
             PointLight::new(
-            Vec3::new(-0.5, 1.0, 0.0),
+            Vec3::new(0.0, 1.0, 0.0),
             Color::new(242, 130, 39),
-            0.5)
+            0.3)
         ),
     ];
 
@@ -497,7 +497,7 @@ pub fn start(){
         Vec3::new(0.0,0.0,0.0),
         10.0, 0.0, 
         Color::new(255, 255, 255), 
-        1.0
+        2.0
     );
     
     
