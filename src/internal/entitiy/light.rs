@@ -128,4 +128,41 @@ impl DayLight {
             self.intensity = 0.0;
         }
     }
+
+    fn interpolate_color(&self, start: (u8, u8, u8), end: (u8, u8, u8), ratio: f32) -> (u8, u8, u8) {
+        (
+            (start.0 as f32 * (1.0 - ratio) + end.0 as f32 * ratio) as u8,
+            (start.1 as f32 * (1.0 - ratio) + end.1 as f32 * ratio) as u8,
+            (start.2 as f32 * (1.0 - ratio) + end.2 as f32 * ratio) as u8,
+        )
+    }
+
+    pub fn calculate_background_color(&self, day_angle: f32) -> Color {
+        
+        const DARK_NIGHT : (u8, u8, u8) = (0, 0, 50);
+        const DAWN : (u8, u8, u8) = (237, 135, 88);
+        const DAY : (u8, u8, u8) = (135, 206, 250);
+
+        let (r, g, b) = if day_angle >= DAY_START && day_angle < DAY_MID {
+            let ratio = day_angle / DAY_MID;
+            if ratio < 0.5 {
+                self.interpolate_color(DARK_NIGHT, DAWN, ratio * 2.0)
+            } else {
+                self.interpolate_color(DAWN, DAY, (ratio - 0.5) * 2.0)
+            }
+        } else if day_angle >= DAY_MID && day_angle < DAY_END {
+            (135, 206, 250)  // Midday color
+        } else if day_angle >= DAY_END && day_angle < NIGHT_START {
+            let ratio = (day_angle - DAY_END) / (NIGHT_START - DAY_END);
+            if ratio < 0.5 {
+                self.interpolate_color(DAY, DAWN, ratio * 2.0)
+            } else {
+                self.interpolate_color(DAWN, DARK_NIGHT, (ratio - 0.5) * 2.0)
+            }
+        } else {
+            (0, 0, 50)  // Night color
+        };
+
+        Color::new(r, g, b)
+    }
 }

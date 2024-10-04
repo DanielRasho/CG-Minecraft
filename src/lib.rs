@@ -66,17 +66,7 @@ pub fn start(){
         Vec3::new(0.0, 1.0, 0.0)
     );
     
-    let mut sun = Box::new(
-        DayLight::new(
-            Vec3::new(10.0, 0.0, 0.0), 
-            Vec3::new(0.0,0.0,0.0),
-            10.0, 0.0, 
-            Color::new(255, 255, 255), 
-            3.0
-        )
-    );
-    
-    let lights: [Box<dyn Light + Sync>; 3] = [
+    let lights: [Box<dyn Light + Sync>; 2] = [
         Box::new(
             PointLight::new(
             Vec3::new(0.0, 7.0, 7.0),
@@ -89,18 +79,18 @@ pub fn start(){
             Color::new(10, 255, 10),
             1.0)
         ),
-        Box::new(
-            DayLight::new(
-                Vec3::new(10.0, 0.0, 0.0), 
-                Vec3::new(0.0,0.0,0.0),
-                10.0, 0.0, 
-                Color::new(255, 255, 255), 
-                3.0
-            )
-        )
     ];
 
     let ambient_light = AmbientLight::new(Color::new(230, 164, 50), 0.3);
+
+    let mut sun = DayLight::new(
+        Vec3::new(10.0, 0.0, 0.0), 
+        Vec3::new(0.0,0.0,0.0),
+        10.0, 0.0, 
+        Color::new(255, 255, 255), 
+        3.0
+    );
+    
     
     let mut day_angle = PI / 3.0;
     
@@ -138,17 +128,18 @@ pub fn start(){
 
         // Day Change
         if window.is_key_down(Key::M) {
+            sun.translate_day_light(DAY_SPEED);
             day_angle = (day_angle + DAY_SPEED) % (2.0 * PI);
-            render(&mut framebuffer, &objects, &camera, &lights, day_angle, &ambient_light);
+            render(&mut framebuffer, &objects, &camera, &lights, &sun, &ambient_light);
         }
         if window.is_key_down(Key::N) {
+            sun.translate_day_light(-DAY_SPEED);
             day_angle = (day_angle - DAY_SPEED) % (2.0 * PI);
-            render(&mut framebuffer, &objects, &camera, &lights, day_angle, &ambient_light);
+            render(&mut framebuffer, &objects, &camera, &lights, &sun, &ambient_light);
         }
-        println!("{}", day_angle);
 
         if camera.check_if_changed() {
-            render(&mut framebuffer, &objects, &camera, &lights, day_angle, &ambient_light);
+            render(&mut framebuffer, &objects, &camera, &lights, &sun, &ambient_light);
         }
 
         window

@@ -8,7 +8,7 @@ use super::framebuffer::Framebuffer;
 use super::entitiy::color::Color;
 use super::entitiy::intersect::Intersect;
 use super::entitiy::object::Object;
-use super::entitiy::light::{Light,  AmbientLight};
+use super::entitiy::light::{AmbientLight, DayLight, Light};
 
 const REFLECTION_DEPTH: u32 = 3;
 const ORIGIN_BIAS: f32 = 1e-4;
@@ -18,7 +18,7 @@ pub fn cast_ray(
     ray_direction: &Vec3,
     objects: &[Box<dyn Object + Sync>],
     lights: &[Box<dyn Light + Sync>],
-    day_angle: f32,
+    day_light: &DayLight,
     ambient_light: &AmbientLight,
     depth: u32,
 ) -> Color {
@@ -36,17 +36,17 @@ pub fn cast_ray(
     }
 
     if !intersect.is_intersecting {
-        return calculate_background_color(day_angle);
+        return day_light.calculate_background_color(day_light.day_angle);
     }
 
     // Start with ambient light contribution (scaled by ambient intensity)
     let mut final_color = intersect.color * ambient_light.intensity;
 
     // Iterate over each light and accumulate contributions
+    let view_dir = (ray_origin - intersect.point).normalize();
     for light in lights {
         // Calculate diffuse and specular light for each light source
         let light_dir = (light.get_position() - intersect.point).normalize();
-        let view_dir = (ray_origin - intersect.point).normalize();
         let reflect_dir = reflect(&-light_dir, &intersect.normal); // Reflect direction calculated per light
 
         let shadow_intensity = cast_shadow(&intersect, light, objects);
@@ -61,6 +61,20 @@ pub fn cast_ray(
         // Add diffuse and specular components to the final color
         final_color = final_color + diffuse + specular;
     }
+    
+    // Calculate DayLight contribution
+    let day_light_dir = (day_light.get_position() - intersect.point).normalize();
+    let day_light_shadow_intensity = cast_day_shadow(&intersect, day_light, objects);
+    let day_light_intensity = day_light.get_intensity() * (1.0 - day_light_shadow_intensity);
+
+    let day_light_diffuse_intensity = intersect.normal.dot(&day_light_dir).clamp(0.0, 1.0);
+    let day_light_diffuse = intersect.color * intersect.material.albedo[0] * day_light_diffuse_intensity * day_light_intensity;
+
+    let day_light_specular_intensity = view_dir.dot(&reflect(&-day_light_dir, &intersect.normal)).max(0.0).powf(intersect.material.specular);
+    let day_light_specular = day_light.get_color() * intersect.material.albedo[1] * day_light_specular_intensity * day_light_intensity;
+
+    // Add DayLight contributions to final color
+    final_color = final_color + day_light_diffuse + day_light_specular;
 
     // Calculate reflection (move reflect calculation outside of the loop)
     let mut reflect_color = Color::new(0, 0, 0);
@@ -68,7 +82,7 @@ pub fn cast_ray(
     if reflectivity > 0.0 {
         let reflect_dir = reflect(&-ray_direction, &intersect.normal).normalize(); // Now using ray direction for reflection
         let reflect_origin = intersect.point;
-        reflect_color = cast_ray(&reflect_origin, &reflect_dir, objects, lights, day_angle, ambient_light, depth + 1);
+        reflect_color = cast_ray(&reflect_origin, &reflect_dir, objects, lights, day_light, ambient_light, depth + 1);
     }
 
     // Calculate refraction
@@ -77,7 +91,7 @@ pub fn cast_ray(
     if transparency > 0.0 {
         let refract_dir = refract(ray_direction, &intersect.normal, intersect.material.refractive_index);
         let refract_origin = offset_origin(&intersect, &refract_dir);
-        refract_color = cast_ray(&refract_origin, &refract_dir, objects, lights, day_angle, ambient_light, depth + 1);
+        refract_color = cast_ray(&refract_origin, &refract_dir, objects, lights, day_light, ambient_light, depth + 1);
     }
 
     // Combine the results of lighting, reflection, and refraction
@@ -91,7 +105,7 @@ pub fn render(
     objects: &[Box<dyn Object + Sync>],
     camera: &Camera,
     lights: &[Box<dyn Light + Sync>],
-    day_angle: f32,
+    day_light: &DayLight,
     ambient_light: &AmbientLight,
 ) {
     const FIELD_OF_VIEW: f32 = PI / 3.0;
@@ -122,7 +136,7 @@ pub fn render(
 
                 // Cast the ray and get the pixel color
                 let pixel_color =
-                    cast_ray(&camera.eye, &rotated_direction, objects, lights, day_angle, ambient_light, REFLECTION_DEPTH);
+                    cast_ray(&camera.eye, &rotated_direction, objects, lights, day_light, ambient_light, REFLECTION_DEPTH);
                 *pixel = pixel_color.to_hex(); // Convert color to u32 and assign to pixel
             });
         });
@@ -192,64 +206,28 @@ fn cast_shadow(intersect: &Intersect, light: &Box<dyn Light + Sync>, objects: &[
     shadow_intensity
 }
 
-fn calculate_background_color(day_angle: f32) -> Color {
-    let angle = day_angle;
 
-    const DAY_START: f32 = 0.0;                           // Amanecer
-    const DAY_MID: f32 = std::f32::consts::PI / 3.0;     // Medio día (reducido)
-    const DAY_END: f32 = std::f32::consts::PI * 2.0 / 3.0; // Atardecer (reducido)
-    const NIGHT_START: f32 = DAY_END + 2.0;               // Inicio de la Noche   
+fn cast_day_shadow(intersect: &Intersect, light: &DayLight, objects: &[Box<dyn Object + Sync>]) -> f32 {
+    let light_dir = (light.get_position() - intersect.point).normalize();
+    let shadow_ray_origin = intersect.point + intersect.normal * 1e-4; // Avoid self-shadowing bias
+    let light_distance = (light.get_position() - shadow_ray_origin).magnitude(); // Distance from light to intersection
 
-    let r: u8;
-    let g: u8;
-    let b: u8;
+    let mut shadow_intensity = 0.0; // Start with no shadow
 
-    if angle >= DAY_START && angle < DAY_MID {
-        // Gradiente de azul oscuro a amarillo-naranja y luego a celeste (Amanecer)
-        let ratio = angle / (DAY_MID - DAY_START);
-        
-        // De azul oscuro (0) a naranja (255) a celeste (135)
-        if ratio < 0.5 {
-            let sub_ratio = ratio * 2.0; // Escalamos a [0, 1]
-            r = (0.0 * (1.0 - sub_ratio) + 220.0 * sub_ratio) as u8; // Azul oscuro a naranja (220)
-            g = (0.0 * (1.0 - sub_ratio) + 162.0 * sub_ratio) as u8; // Azul oscuro a naranja (162)
-            b = (50.0 * (1.0 - sub_ratio) + 30.0 * sub_ratio) as u8; // Azul oscuro a naranja (30)
-        } else {
-            let sub_ratio = (ratio - 0.5) * 2.0; // Escalamos a [0, 1]
-            r = (220.0 * (1.0 - sub_ratio) + 135.0 * sub_ratio) as u8; // Naranja (220) a celeste (135)
-            g = (162.0 * (1.0 - sub_ratio) + 206.0 * sub_ratio) as u8; // Naranja (162) a celeste (206)
-            b = (30.0 * (1.0 - sub_ratio) + 250.0 * sub_ratio) as u8; // Naranja (30) a celeste (250)
+    for object in objects {
+        let shadow_intersect = object.ray_intersect(&shadow_ray_origin, &light_dir);
+        if shadow_intersect.is_intersecting {
+            // Compute the distance from the intersection to the shadow-casting object
+            let occlusion_distance = shadow_intersect.distance;
+
+            // Calculate shadow attenuation based on the distance between the object and the light source
+            let attenuation = (occlusion_distance / light_distance).clamp(0.0, 1.0); // The farther the object, the smaller the shadow
+
+            // Modify shadow intensity based on the object's distance
+            shadow_intensity = 1.0 * attenuation; // Full shadow intensity when close, less when far
+            break;
         }
-
-    } else if angle >= DAY_MID && angle < DAY_END {
-        // Día: Celeste
-        r = 135;
-        g = 206;
-        b = 250;
-
-    } else if angle >= DAY_END && angle < NIGHT_START {
-        // Gradiente de celeste a amarillo-naranja y luego a azul oscuro (Atardecer)
-        let ratio = (angle - DAY_END) / (NIGHT_START - DAY_END);
-        
-        // De celeste (135) a amarillo-naranja (255)
-        if ratio < 0.5 {
-            let sub_ratio = ratio * 2.0; // Escalamos a [0, 1]
-            r = (135.0 * (1.0 - sub_ratio) + 220.0 * sub_ratio) as u8; // Celeste a naranja (220)
-            g = (206.0 * (1.0 - sub_ratio) + 162.0 * sub_ratio) as u8; // Celeste a naranja (162)
-            b = (250.0 * (1.0 - sub_ratio) + 30.0 * sub_ratio) as u8; // Celeste a naranja (30)
-        } else {
-            let sub_ratio = (ratio - 0.5) * 2.0; // Escalamos a [0, 1]
-            r = (220.0 * (1.0 - sub_ratio) + 0.0 * sub_ratio) as u8; // Naranja (220) a azul oscuro (0)
-            g = (162.0 * (1.0 - sub_ratio) + 0.0 * sub_ratio) as u8; // Naranja (162) a azul oscuro (0)
-            b = (30.0 * (1.0 - sub_ratio) + 50.0 * sub_ratio) as u8; // Naranja (30) a azul oscuro (50)
-        }
-
-    } else {
-        // Noche: Azul oscuro
-        r = 0; 
-        g = 0; 
-        b = 50; // Azul oscuro
     }
 
-    Color::new(r , g , b )
+    shadow_intensity
 }
