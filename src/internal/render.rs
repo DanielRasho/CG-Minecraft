@@ -19,6 +19,7 @@ pub fn cast_ray(
     ray_direction: &Vec3,
     objects: &[Box<dyn Object + Sync>],
     lights: &[Light],
+    day_angle: f32,
     ambient_light: &AmbientLight,
     depth: u32,
 ) -> Color {
@@ -36,7 +37,7 @@ pub fn cast_ray(
     }
 
     if !intersect.is_intersecting {
-        return Color::new(25, 25, 120);
+        return calculate_background_color(day_angle);
     }
 
     // Start with ambient light contribution (scaled by ambient intensity)
@@ -68,7 +69,7 @@ pub fn cast_ray(
     if reflectivity > 0.0 {
         let reflect_dir = reflect(&-ray_direction, &intersect.normal).normalize(); // Now using ray direction for reflection
         let reflect_origin = intersect.point;
-        reflect_color = cast_ray(&reflect_origin, &reflect_dir, objects, lights, ambient_light, depth + 1);
+        reflect_color = cast_ray(&reflect_origin, &reflect_dir, objects, lights, day_angle, ambient_light, depth + 1);
     }
 
     // Calculate refraction
@@ -77,7 +78,7 @@ pub fn cast_ray(
     if transparency > 0.0 {
         let refract_dir = refract(ray_direction, &intersect.normal, intersect.material.refractive_index);
         let refract_origin = offset_origin(&intersect, &refract_dir);
-        refract_color = cast_ray(&refract_origin, &refract_dir, objects, lights, ambient_light, depth + 1);
+        refract_color = cast_ray(&refract_origin, &refract_dir, objects, lights, day_angle, ambient_light, depth + 1);
     }
 
     // Combine the results of lighting, reflection, and refraction
@@ -91,6 +92,7 @@ pub fn render(
     objects: &[Box<dyn Object + Sync>],
     camera: &Camera,
     lights: &[Light],
+    day_angle: f32,
     ambient_light: &AmbientLight,
 ) {
     const FIELD_OF_VIEW: f32 = PI / 3.0;
@@ -121,7 +123,7 @@ pub fn render(
 
                 // Cast the ray and get the pixel color
                 let pixel_color =
-                    cast_ray(&camera.eye, &rotated_direction, objects, lights, ambient_light, REFLECTION_DEPTH);
+                    cast_ray(&camera.eye, &rotated_direction, objects, lights, day_angle, ambient_light, REFLECTION_DEPTH);
                 *pixel = pixel_color.to_hex(); // Convert color to u32 and assign to pixel
             });
         });
@@ -189,4 +191,66 @@ fn cast_shadow(intersect: &Intersect, light: &Light, objects: &[Box<dyn Object +
     }
 
     shadow_intensity
+}
+
+fn calculate_background_color(day_angle: f32) -> Color {
+    let angle = day_angle;
+
+    const DAY_START: f32 = 0.0;                           // Amanecer
+    const DAY_MID: f32 = std::f32::consts::PI / 3.0;     // Medio día (reducido)
+    const DAY_END: f32 = std::f32::consts::PI * 2.0 / 3.0; // Atardecer (reducido)
+    const NIGHT_START: f32 = DAY_END + 2.0;               // Inicio de la Noche   
+
+    let r: u8;
+    let g: u8;
+    let b: u8;
+
+    if angle >= DAY_START && angle < DAY_MID {
+        // Gradiente de azul oscuro a amarillo-naranja y luego a celeste (Amanecer)
+        let ratio = angle / (DAY_MID - DAY_START);
+        
+        // De azul oscuro (0) a naranja (255) a celeste (135)
+        if ratio < 0.5 {
+            let sub_ratio = ratio * 2.0; // Escalamos a [0, 1]
+            r = (0.0 * (1.0 - sub_ratio) + 220.0 * sub_ratio) as u8; // Azul oscuro a naranja (220)
+            g = (0.0 * (1.0 - sub_ratio) + 162.0 * sub_ratio) as u8; // Azul oscuro a naranja (162)
+            b = (50.0 * (1.0 - sub_ratio) + 30.0 * sub_ratio) as u8; // Azul oscuro a naranja (30)
+        } else {
+            let sub_ratio = (ratio - 0.5) * 2.0; // Escalamos a [0, 1]
+            r = (220.0 * (1.0 - sub_ratio) + 135.0 * sub_ratio) as u8; // Naranja (220) a celeste (135)
+            g = (162.0 * (1.0 - sub_ratio) + 206.0 * sub_ratio) as u8; // Naranja (162) a celeste (206)
+            b = (30.0 * (1.0 - sub_ratio) + 250.0 * sub_ratio) as u8; // Naranja (30) a celeste (250)
+        }
+
+    } else if angle >= DAY_MID && angle < DAY_END {
+        // Día: Celeste
+        r = 135;
+        g = 206;
+        b = 250;
+
+    } else if angle >= DAY_END && angle < NIGHT_START {
+        // Gradiente de celeste a amarillo-naranja y luego a azul oscuro (Atardecer)
+        let ratio = (angle - DAY_END) / (NIGHT_START - DAY_END);
+        
+        // De celeste (135) a amarillo-naranja (255)
+        if ratio < 0.5 {
+            let sub_ratio = ratio * 2.0; // Escalamos a [0, 1]
+            r = (135.0 * (1.0 - sub_ratio) + 220.0 * sub_ratio) as u8; // Celeste a naranja (220)
+            g = (206.0 * (1.0 - sub_ratio) + 162.0 * sub_ratio) as u8; // Celeste a naranja (162)
+            b = (250.0 * (1.0 - sub_ratio) + 30.0 * sub_ratio) as u8; // Celeste a naranja (30)
+        } else {
+            let sub_ratio = (ratio - 0.5) * 2.0; // Escalamos a [0, 1]
+            r = (220.0 * (1.0 - sub_ratio) + 0.0 * sub_ratio) as u8; // Naranja (220) a azul oscuro (0)
+            g = (162.0 * (1.0 - sub_ratio) + 0.0 * sub_ratio) as u8; // Naranja (162) a azul oscuro (0)
+            b = (30.0 * (1.0 - sub_ratio) + 50.0 * sub_ratio) as u8; // Naranja (30) a azul oscuro (50)
+        }
+
+    } else {
+        // Noche: Azul oscuro
+        r = 0; 
+        g = 0; 
+        b = 50; // Azul oscuro
+    }
+
+    Color::new(r , g , b )
 }

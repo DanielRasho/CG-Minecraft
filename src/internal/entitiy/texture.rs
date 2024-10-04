@@ -1,6 +1,26 @@
+use once_cell::sync::Lazy;
+use std::sync::Arc;
 use image::{ImageReader, Pixel, DynamicImage, GenericImageView};
 use std::fmt;
 use super::color::Color;
+
+pub static BOOK_SHELF: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/bookshelf.png")));
+pub static CHEST: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/chest.png")));
+pub static JUKEBOX: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/jukebox.png")));
+pub static FURNACE: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/furnace.png")));
+pub static CRAFTING_TABLE: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/crafting_table.png")));
+
+pub static COBBLESTONE: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/cobblestone.png")));
+
+pub static DARK_OAK_PLANKS: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/dark_oak_planks.png")));
+pub static OAK_PLANKS: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/oak_planks.png")));
+pub static OAK_LOG: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/oak_log.png")));
+
+pub static GLASS: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/glass.png")));
+
+pub static GLOWSTONE: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/glowstone.png")));
+
+pub static GRASS: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/grass.png")));
 
 #[derive(Clone)]
 pub struct Texture {

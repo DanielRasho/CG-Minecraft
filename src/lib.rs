@@ -3,6 +3,7 @@ mod internal;
 use internal::camera::Camera;
 use minifb::{Window, WindowOptions, Key};
 use nalgebra_glm::Vec3;
+use std::alloc::GlobalAlloc;
 use std::sync::Arc;
 use std::time::Duration;
 use std::f32::consts::PI;
@@ -11,9 +12,9 @@ use internal::render::render;
 use internal::entitiy::color::Color;
 use internal::entitiy::material::{Material, Diffuse};
 use internal::entitiy::cube::Cube;
-// use internal::entitiy::sphere::Sphere;
 use internal::entitiy::object::Object;
 use internal::entitiy::light::{Light, AmbientLight};
+use internal::entitiy::texture::{BOOK_SHELF, CHEST, CRAFTING_TABLE, FURNACE, GLASS, GRASS, OAK_LOG, OAK_PLANKS, JUKEBOX};
 
 pub fn start(){
     
@@ -37,7 +38,7 @@ pub fn start(){
     
     // Create an array of Box<dyn Object>
     let white_fur = Arc::new( Material {
-        diffuse: Diffuse::Color(Color::new(100, 100, 100)),
+        diffuse: Diffuse::Texture(FURNACE.clone()),
         specular: 10.0,
         albedo: [0.6, 0.3],
         reflectivity: 0.2,
@@ -46,17 +47,17 @@ pub fn start(){
     });
     
     let black_fur = Arc::new (Material {
-        diffuse: Diffuse::Color(Color::new(80, 0, 0)),
+        diffuse: Diffuse::Texture(JUKEBOX.clone()),
         specular: 10.0,
         albedo: [0.9, 0.1],
         reflectivity: 0.2,
-        transparency: 0.5,
+        transparency: 1.0,
         refractive_index: 1.0,
     });
 
     let objects: [Box<dyn Object + Sync>; 2] = [
         Box::new(Cube{ max: Vec3::new(0.5,0.5,0.5), min: Vec3::new(-0.5, -0.5, -0.5), material: Arc::clone(&white_fur)}), // EARS
-        Box::new(Cube{ max: Vec3::new(1.0,2.0,2.5), min: Vec3::new(0.0, 1.0, 1.5), material: Arc::clone(&white_fur)}), // EARS
+        Box::new(Cube{ max: Vec3::new(1.0,2.0,2.5), min: Vec3::new(0.0, 1.0, 1.5), material: Arc::clone(&black_fur)}), // EARS
     ];
     
     let mut camera = Camera::new(
@@ -78,8 +79,11 @@ pub fn start(){
 
     let ambient_light = AmbientLight::new(Color::new(230, 164, 50), 0.3);
     
+    let mut day_angle = PI / 3.0;
+    
     const ROTATION_SPEED : f32 = PI / 10.0;
     const ZOOM_SPEED : f32 = 0.2;
+    const DAY_SPEED : f32 = PI / 40.0;
 
     // RENDER LOOP
     while window.is_open() {
@@ -109,8 +113,19 @@ pub fn start(){
             camera.zoom(-ZOOM_SPEED);
         }
 
+        // Day Change
+        if window.is_key_down(Key::M) {
+            day_angle = (day_angle + DAY_SPEED) % (2.0 * PI);
+            render(&mut framebuffer, &objects, &camera, &lights, day_angle, &ambient_light);
+        }
+        if window.is_key_down(Key::N) {
+            day_angle = (day_angle - DAY_SPEED) % (2.0 * PI);
+            render(&mut framebuffer, &objects, &camera, &lights, day_angle, &ambient_light);
+        }
+        println!("{}", day_angle);
+
         if camera.check_if_changed() {
-            render(&mut framebuffer, &objects, &camera, &lights, &ambient_light);
+            render(&mut framebuffer, &objects, &camera, &lights, day_angle, &ambient_light);
         }
 
         window

@@ -8,23 +8,6 @@ use super::texture::Texture;
 // use std::sync::Arc;
 
 // I WANT TO DEFINE TEXTURE LIKE SO, so that are
-static BOOK_SHELF: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/bookshelf.png")));
-static CHEST: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/chest.png")));
-static JUKEBOX: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/jukebox.png")));
-static FURNACE: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/furnace.png")));
-static CRAFTING_TABLE: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/crafting_table.png")));
-
-static COBBLESTONE: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/cobblestone.png")));
-
-static DARK_OAK_PLANKS: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/dark_oak_planks.png")));
-static OAK_PLANKS: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/oak_planks.png")));
-static OAK_LOG: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/oak_log.png")));
-
-static GLASS: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/glass.png")));
-
-static GLOWSTONE: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/glowstone.png")));
-
-static GRASS: Lazy<Arc<Texture>> = Lazy::new(|| Arc::new(Texture::new("assets/grass.png")));
 
 #[derive(Debug, Clone)]
 pub enum Diffuse {

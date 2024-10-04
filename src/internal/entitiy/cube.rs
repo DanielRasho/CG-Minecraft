@@ -4,7 +4,12 @@ use super::material::{self, Diffuse, Material};
 use super::intersect::Intersect;
 use super::object::Object;
 use super::color::Color;
+use super::texture::Texture;
 
+const NUM_FACE_COLUMNS: usize = 6; // Number of columns in the texture atlas
+const NUM_FACE_ROWS: usize = 1;     // Number of rows in the texture atlas
+const FACE_SIZE: f32 = 16.0;         // Size of each face in pixels
+                                     //
 pub struct Cube {
     pub min: Vec3,             // minimum corner of the cube
     pub max: Vec3,             // maximum corner of the cube
@@ -71,18 +76,16 @@ impl<'a> Object for Cube {
             let distance = tmin;
 
             // Calculate UV coordinates
-            let (u, v) = self.calculate_uv(&point);
+            let (u, v) = self.calculate_uv(&point, & normal);
             
-            let mut surface_color = Color::new(0, 0, 0);
-            
-            match &self.material.diffuse {
-                Diffuse::Color(color) => {
-                    surface_color = color.clone();
+            let surface_color = match &self.material.diffuse {
+                Diffuse::Color(color) => color.clone(),
+                Diffuse::Texture(texture) => {
+                    // Sample color from texture atlas based on UV coordinates
+                    let face = self.get_face_index(&normal).unwrap();
+                    self.sample_texture(texture, u, v, face)
                 }
-                Diffuse::Texture(color) => {
-                    surface_color = Color::new(255, 0, 0);
-                }
-            }
+            };
 
             // ERROR HERE
             return Intersect::new(point, normal, distance, &self.material, surface_color); // Now using a reference to the material
@@ -93,6 +96,18 @@ impl<'a> Object for Cube {
 }
 
 impl Cube {
+
+    // Determine the face index based on the normal vector
+    fn get_face_index(&self, normal: &Vec3) -> Option<usize> {
+        if (normal.x).abs() > (normal.y).abs() && (normal.x).abs() > (normal.z).abs() {
+            return if normal.x < 0.0 { Some(5) } else { Some(4) }; // Left or Right face
+        } else if (normal.y).abs() > (normal.x).abs() && (normal.y).abs() > (normal.z).abs() {
+            return if normal.y < 0.0 { Some(1) } else { Some(0) }; // Bottom or Top face
+        } else {
+            return if normal.z < 0.0 { Some(2) } else { Some(3) }; // Back or Front face
+        }
+    }
+    
     fn calculate_normal(&self, point: &Vec3) -> Vec3 {
         // Comparamos el punto de intersección con las caras del cubo para determinar la normal
         let epsilon = 1e-4; // Un pequeño valor para la precisión
@@ -114,39 +129,40 @@ impl Cube {
         Vec3::new(0.0, 0.0, 0.0) // Normal por defecto (si no se encuentra coincidencia)
     }
 
-    fn calculate_uv(&self, point: &Vec3) -> (f32, f32) {
-        let epsilon = 1e-4;
-    
-        if (point.x - self.min.x).abs() < epsilon {
-            // Cara izquierda (eje X negativo)
-            let u = (point.z - self.min.z) / (self.max.z - self.min.z);
-            let v = (self.max.y - point.y) / (self.max.y - self.min.y); 
-            return (u, v);
-        } else if (point.x - self.max.x).abs() < epsilon {
-            // Cara derecha (eje X positivo)
-            let u = (point.z - self.min.z) / (self.max.z - self.min.z);
-            let v = (self.max.y - point.y) / (self.max.y - self.min.y); 
-            return (u, v);
-        } else if (point.y - self.min.y).abs() < epsilon {
-            // Cara inferior (eje Y negativo)
+    fn calculate_uv(&self, point: &Vec3, normal: &Vec3) -> (f32, f32) {
+        if (normal.x).abs() > (normal.y).abs() && (normal.x).abs() > (normal.z).abs() {
+            // Left or right face (rotate by 180 degrees)
+            let u = (point.z - self.min.z) / (self.max.z - self.min.z); // Z to U mapping, reversed
+            let v = 1.0 - (point.y - self.min.y) / (self.max.y - self.min.y); // Y to V mapping
+            return (u.clamp(0.0, 1.0), v.clamp(0.0, 1.0)); // Ensure u and v are within [0, 1]
+        } else if (normal.y).abs() > (normal.x).abs() && (normal.y).abs() > (normal.z).abs() {
+            // Bottom or top face
             let u = (point.x - self.min.x) / (self.max.x - self.min.x);
             let v = (point.z - self.min.z) / (self.max.z - self.min.z);
-            return (u, v);
-        } else if (point.y - self.max.y).abs() < epsilon {
-            // Cara superior (eje Y positivo) - Ya funciona bien
-            let u = (point.x - self.min.x) / (self.max.x - self.min.x);
-            let v = (point.z - self.min.z) / (self.max.z - self.min.z);
-            return (u, v);
-        } else if (point.z - self.min.z).abs() < epsilon {
-            // Cara trasera (eje Z negativo)
-            let u = (self.max.x - point.x) / (self.max.x - self.min.x);
-            let v = (self.max.y - point.y) / (self.max.y - self.min.y);
-            return (u, v);
+            // Ensure u and v are within [0, 1] range
+            return (u.clamp(0.0, 1.0), v.clamp(0.0, 1.0));
         } else {
-            // Cara frontal (eje Z positivo) - Ya funciona bien
+            // Front or back face
             let u = (point.x - self.min.x) / (self.max.x - self.min.x);
-            let v = (self.max.y - point.y) / (self.max.y - self.min.y);
-            return (u, v);
+            let v = 1.0 - (point.y - self.min.y) / (self.max.y - self.min.y);
+            // Ensure u and v are within [0, 1] range
+            return (u.clamp(0.0, 1.0), v.clamp(0.0, 1.0));
         }
+    }
+
+    fn sample_texture(&self, texture: &Arc<Texture>, u: f32, v: f32, face_index: usize) -> Color {
+        let tex_width = FACE_SIZE * NUM_FACE_COLUMNS as f32; // Total width for all columns
+        let tex_height = FACE_SIZE * NUM_FACE_ROWS as f32;   // Total height for all rows
+    
+        // Calculate the row and column based on the face index
+        let col = face_index % NUM_FACE_COLUMNS; // Number of columns
+        let row = face_index / NUM_FACE_COLUMNS;  // Number of rows
+    
+        // Sample the color based on UV coordinates
+        let x = (u * FACE_SIZE + (col as f32 * FACE_SIZE)).clamp(0.0, tex_width - 1.0) as usize;
+        let y = (v * FACE_SIZE + (row as f32 * FACE_SIZE)).clamp(0.0, tex_height - 1.0) as usize;
+    
+        // Use the method to get color from the texture atlas
+        texture.get_color(x, y) // Implement this method in your Texture struct
     }
 }
