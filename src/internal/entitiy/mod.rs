@@ -6,3 +6,4 @@ pub mod object;
 pub mod sphere;
 pub mod grid;
 pub mod intersect;
+pub mod texture;

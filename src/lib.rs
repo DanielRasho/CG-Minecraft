@@ -3,14 +3,15 @@ mod internal;
 use internal::camera::Camera;
 use minifb::{Window, WindowOptions, Key};
 use nalgebra_glm::Vec3;
+use std::sync::Arc;
 use std::time::Duration;
 use std::f32::consts::PI;
 use internal::framebuffer::Framebuffer;
 use internal::render::render;
 use internal::entitiy::color::Color;
-use internal::entitiy::material::Material;
+use internal::entitiy::material::{Material, Diffuse};
 use internal::entitiy::cube::Cube;
-use internal::entitiy::sphere::Sphere;
+// use internal::entitiy::sphere::Sphere;
 use internal::entitiy::object::Object;
 use internal::entitiy::light::{Light, AmbientLight};
 
@@ -35,37 +36,27 @@ pub fn start(){
     ).unwrap();
     
     // Create an array of Box<dyn Object>
-    let white_fur = Material{
-        diffuse: Color::new(100, 100, 100),
+    let white_fur = Arc::new( Material {
+        diffuse: Diffuse::Color(Color::new(100, 100, 100)),
         specular: 10.0,
         albedo: [0.6, 0.3],
         reflectivity: 0.2,
         transparency: 0.0,
-        refractive_index: 1.0
-    };
-    let black_fur = Material{
-        diffuse: Color::new(80, 0, 00),
+        refractive_index: 1.0,
+    });
+    
+    let black_fur = Arc::new (Material {
+        diffuse: Diffuse::Color(Color::new(80, 0, 0)),
         specular: 10.0,
         albedo: [0.9, 0.1],
         reflectivity: 0.2,
         transparency: 0.5,
-        refractive_index: 1.0
-    };
+        refractive_index: 1.0,
+    });
 
-    let wood = Material {
-        diffuse: Color::new(139, 69, 19),
-        specular: 1.0,
-        albedo: [0.5, 0.3],
-        reflectivity: 0.1,
-        transparency: 0.0,
-        refractive_index: 1.0
-    };
-
-
-    let objects: [Box<dyn Object + Sync>; 3] = [
-        Box::new(Cube{ max: Vec3::new(0.5,0.5,0.5), min: Vec3::new(-0.5, -0.5, -0.5), material: white_fur}), // EARS
-        Box::new(Cube{ max: Vec3::new(1.0,2.0,2.5), min: Vec3::new(0.0, 1.0, 1.5), material: white_fur}), // EARS
-        Box::new(Sphere::new(Vec3::new(-3.0, 0.0, 1.0),2.0, wood))
+    let objects: [Box<dyn Object + Sync>; 2] = [
+        Box::new(Cube{ max: Vec3::new(0.5,0.5,0.5), min: Vec3::new(-0.5, -0.5, -0.5), material: Arc::clone(&white_fur)}), // EARS
+        Box::new(Cube{ max: Vec3::new(1.0,2.0,2.5), min: Vec3::new(0.0, 1.0, 1.5), material: Arc::clone(&white_fur)}), // EARS
     ];
     
     let mut camera = Camera::new(

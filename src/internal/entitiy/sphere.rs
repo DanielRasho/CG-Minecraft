@@ -1,7 +1,9 @@
+/* 
 use nalgebra_glm::{Vec3, dot};
 use super::material::Material;
 use super::intersect::Intersect;
 use super::object::Object;
+use super::color::Color;
 
 pub struct Sphere{
     pub center: Vec3,
@@ -32,10 +34,13 @@ impl Object for Sphere{
                 let normal = (point - self.center).normalize();
                 let distance = t;
 
-                return Intersect::new(point, normal, distance, self.material);
+                return Intersect::new(point, normal, distance, self.material, Color::new(0,0,0));
             }
         }
 
         Intersect::empty()
     }
 }
+
+
+*/

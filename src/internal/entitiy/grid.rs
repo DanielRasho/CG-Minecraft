@@ -1,3 +1,5 @@
+/*
+
 use nalgebra_glm::Vec3;
 use super::color::Color;
 use super::material::Material;
@@ -28,3 +30,6 @@ impl Grid {
         Grid { cubes }
     }
 }
+
+
+*/

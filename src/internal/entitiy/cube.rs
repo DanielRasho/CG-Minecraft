@@ -1,22 +1,24 @@
+use std::sync::Arc;
 use nalgebra_glm::Vec3;
-use super::material::Material;
+use super::material::{self, Diffuse, Material};
 use super::intersect::Intersect;
 use super::object::Object;
+use super::color::Color;
 
 pub struct Cube {
-    pub min: Vec3, // minimum corner of the cube
-    pub max: Vec3, // maximum corner of the cube
-    pub material: Material,
+    pub min: Vec3,             // minimum corner of the cube
+    pub max: Vec3,             // maximum corner of the cube
+    pub material: Arc<Material>, // reference to the material
 }
 
-impl Cube {
-    pub fn new(min: Vec3, max: Vec3, material: Material) -> Cube {
+impl Cube{
+    pub fn new(min: Vec3, max: Vec3, material: Arc<Material>) -> Cube {
         Cube { min, max, material }
     }
 }
 
-impl Object for Cube {
-        fn ray_intersect(&self, ray_origin: &Vec3, ray_direction: &Vec3) -> Intersect {
+impl<'a> Object for Cube {
+    fn ray_intersect(&self, ray_origin: &Vec3, ray_direction: &Vec3) -> Intersect {
         let mut tmin = (self.min.x - ray_origin.x) / ray_direction.x;
         let mut tmax = (self.max.x - ray_origin.x) / ray_direction.x;
 
@@ -71,7 +73,19 @@ impl Object for Cube {
             // Calculate UV coordinates
             let (u, v) = self.calculate_uv(&point);
             
-            return Intersect::new(point, normal, distance, self.material);
+            let mut surface_color = Color::new(0, 0, 0);
+            
+            match &self.material.diffuse {
+                Diffuse::Color(color) => {
+                    surface_color = color.clone();
+                }
+                Diffuse::Texture(color) => {
+                    surface_color = Color::new(255, 0, 0);
+                }
+            }
+
+            // ERROR HERE
+            return Intersect::new(point, normal, distance, &self.material, surface_color); // Now using a reference to the material
         }
 
         Intersect::empty()
@@ -107,32 +121,32 @@ impl Cube {
             // Cara izquierda (eje X negativo)
             let u = (point.z - self.min.z) / (self.max.z - self.min.z);
             let v = (self.max.y - point.y) / (self.max.y - self.min.y); 
-            return(u, v);
+            return (u, v);
         } else if (point.x - self.max.x).abs() < epsilon {
             // Cara derecha (eje X positivo)
             let u = (point.z - self.min.z) / (self.max.z - self.min.z);
             let v = (self.max.y - point.y) / (self.max.y - self.min.y); 
-            return(u, v);
+            return (u, v);
         } else if (point.y - self.min.y).abs() < epsilon {
             // Cara inferior (eje Y negativo)
             let u = (point.x - self.min.x) / (self.max.x - self.min.x);
             let v = (point.z - self.min.z) / (self.max.z - self.min.z);
-            return(u, v);
+            return (u, v);
         } else if (point.y - self.max.y).abs() < epsilon {
             // Cara superior (eje Y positivo) - Ya funciona bien
             let u = (point.x - self.min.x) / (self.max.x - self.min.x);
             let v = (point.z - self.min.z) / (self.max.z - self.min.z);
-            return(u, v);
+            return (u, v);
         } else if (point.z - self.min.z).abs() < epsilon {
             // Cara trasera (eje Z negativo)
             let u = (self.max.x - point.x) / (self.max.x - self.min.x);
             let v = (self.max.y - point.y) / (self.max.y - self.min.y);
-            return(u, v);
+            return (u, v);
         } else {
             // Cara frontal (eje Z positivo) - Ya funciona bien
             let u = (point.x - self.min.x) / (self.max.x - self.min.x);
             let v = (self.max.y - point.y) / (self.max.y - self.min.y);
-            return(u, v);
+            return (u, v);
         }
     }
 }

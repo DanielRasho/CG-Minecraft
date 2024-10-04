@@ -1,4 +1,3 @@
-pub mod line;
 pub mod framebuffer;
 pub mod render;
 pub mod entitiy;
