@@ -13,7 +13,7 @@ use internal::entitiy::color::Color;
 use internal::entitiy::material::{Material, Diffuse};
 use internal::entitiy::cube::Cube;
 use internal::entitiy::object::Object;
-use internal::entitiy::light::{Light, AmbientLight};
+use internal::entitiy::light::{AmbientLight, DayLight, Light, PointLight};
 use internal::entitiy::texture::{BOOK_SHELF, CHEST, CRAFTING_TABLE, FURNACE, GLASS, GRASS, OAK_LOG, OAK_PLANKS, JUKEBOX};
 
 pub fn start(){
@@ -66,15 +66,38 @@ pub fn start(){
         Vec3::new(0.0, 1.0, 0.0)
     );
     
-    let lights : [Light; 2] = [
-        Light::new(
-        Vec3::new(0.0, 7.0, 7.0),
-        Color::new(255, 255, 255),
-        1.0),
-        Light::new(
-        Vec3::new(0.0, 7.0, 7.0),
-        Color::new(10, 255, 10),
-        1.0),
+    let mut sun = Box::new(
+        DayLight::new(
+            Vec3::new(10.0, 0.0, 0.0), 
+            Vec3::new(0.0,0.0,0.0),
+            10.0, 0.0, 
+            Color::new(255, 255, 255), 
+            3.0
+        )
+    );
+    
+    let lights: [Box<dyn Light + Sync>; 3] = [
+        Box::new(
+            PointLight::new(
+            Vec3::new(0.0, 7.0, 7.0),
+            Color::new(255, 255, 255),
+            1.0)
+        ),
+        Box::new(
+            PointLight::new(
+            Vec3::new(0.0, 7.0, 7.0),
+            Color::new(10, 255, 10),
+            1.0)
+        ),
+        Box::new(
+            DayLight::new(
+                Vec3::new(10.0, 0.0, 0.0), 
+                Vec3::new(0.0,0.0,0.0),
+                10.0, 0.0, 
+                Color::new(255, 255, 255), 
+                3.0
+            )
+        )
     ];
 
     let ambient_light = AmbientLight::new(Color::new(230, 164, 50), 0.3);

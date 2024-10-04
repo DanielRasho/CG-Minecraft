@@ -1,17 +1,14 @@
 use rayon::prelude::*;
-use std::f32::INFINITY;
 
 use nalgebra_glm::Vec3;
 use std::f32::consts::PI;
 
-use crate::internal::entitiy::texture::DARK_OAK_PLANKS;
-
 use super::camera::Camera;
 use super::framebuffer::Framebuffer;
-use super::entitiy::{color::Color, material::Material};
+use super::entitiy::color::Color;
 use super::entitiy::intersect::Intersect;
 use super::entitiy::object::Object;
-use super::entitiy::light::{Light, AmbientLight};
+use super::entitiy::light::{Light,  AmbientLight};
 
 const REFLECTION_DEPTH: u32 = 3;
 const ORIGIN_BIAS: f32 = 1e-4;
@@ -20,7 +17,7 @@ pub fn cast_ray(
     ray_origin: &Vec3,
     ray_direction: &Vec3,
     objects: &[Box<dyn Object + Sync>],
-    lights: &[Light],
+    lights: &[Box<dyn Light + Sync>],
     day_angle: f32,
     ambient_light: &AmbientLight,
     depth: u32,
@@ -48,18 +45,18 @@ pub fn cast_ray(
     // Iterate over each light and accumulate contributions
     for light in lights {
         // Calculate diffuse and specular light for each light source
-        let light_dir = (light.position - intersect.point).normalize();
+        let light_dir = (light.get_position() - intersect.point).normalize();
         let view_dir = (ray_origin - intersect.point).normalize();
         let reflect_dir = reflect(&-light_dir, &intersect.normal); // Reflect direction calculated per light
 
         let shadow_intensity = cast_shadow(&intersect, light, objects);
-        let light_intensity = light.intensity * (1.0 - shadow_intensity);
+        let light_intensity = light.get_intensity() * (1.0 - shadow_intensity);
 
         let diffuse_intensity = intersect.normal.dot(&light_dir).clamp(0.0, 1.0);
         let diffuse = intersect.color * intersect.material.albedo[0] * diffuse_intensity * light_intensity;
 
         let specular_intensity = view_dir.dot(&reflect_dir).max(0.0).powf(intersect.material.specular);
-        let specular = light.color * intersect.material.albedo[1] * specular_intensity * light_intensity;
+        let specular = light.get_color() * intersect.material.albedo[1] * specular_intensity * light_intensity;
 
         // Add diffuse and specular components to the final color
         final_color = final_color + diffuse + specular;
@@ -93,7 +90,7 @@ pub fn render(
     framebuffer: &mut Framebuffer,
     objects: &[Box<dyn Object + Sync>],
     camera: &Camera,
-    lights: &[Light],
+    lights: &[Box<dyn Light + Sync>],
     day_angle: f32,
     ambient_light: &AmbientLight,
 ) {
@@ -170,10 +167,10 @@ fn refract(incident: &Vec3, normal: &Vec3, eta_t: f32) -> Vec3 {
     }
 }
 
-fn cast_shadow(intersect: &Intersect, light: &Light, objects: &[Box<dyn Object + Sync>]) -> f32 {
-    let light_dir = (light.position - intersect.point).normalize();
+fn cast_shadow(intersect: &Intersect, light: &Box<dyn Light + Sync>, objects: &[Box<dyn Object + Sync>]) -> f32 {
+    let light_dir = (light.get_position() - intersect.point).normalize();
     let shadow_ray_origin = intersect.point + intersect.normal * 1e-4; // Avoid self-shadowing bias
-    let light_distance = (light.position - shadow_ray_origin).magnitude(); // Distance from light to intersection
+    let light_distance = (light.get_position() - shadow_ray_origin).magnitude(); // Distance from light to intersection
 
     let mut shadow_intensity = 0.0; // Start with no shadow
 
