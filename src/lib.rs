@@ -75,8 +75,8 @@ pub fn start(){
 
     let dark_oak_planks = Arc::new (Material {
         diffuse: Diffuse::Texture(DARK_OAK_PLANKS.clone()),
-        specular: 10.0,
-        albedo: [0.9, 0.1],
+        specular: 8.0,
+        albedo: [0.7, 0.2],
         reflectivity: 0.2,
         transparency: 0.0,
         refractive_index: 1.0,
@@ -490,7 +490,7 @@ pub fn start(){
         ),
     ];
 
-    let ambient_light = AmbientLight::new(Color::new(230, 164, 50), 0.3);
+    let ambient_light = AmbientLight::new(Color::new(230, 164, 50), 0.5);
 
     let mut sun = DayLight::new(
         Vec3::new(10.0, 0.0, 0.0), 
