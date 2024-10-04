@@ -475,12 +475,18 @@ pub fn start(){
         Vec3::new(0.0, 1.0, 0.0)
     );
     
-    let lights: [Box<dyn Light + Sync>; 1] = [
+    let lights: [Box<dyn Light + Sync>; 2] = [
         Box::new(
             PointLight::new(
-            Vec3::new(0.0, 7.0, 7.0),
-            Color::new(255, 255, 255),
-            1.0)
+            Vec3::new(-0.5, -2.0, 1.5),
+            Color::new(242, 130, 39),
+            0.5)
+        ),
+        Box::new(
+            PointLight::new(
+            Vec3::new(-0.5, 1.0, 0.0),
+            Color::new(242, 130, 39),
+            0.5)
         ),
     ];
 
