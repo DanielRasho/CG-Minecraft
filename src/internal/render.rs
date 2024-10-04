@@ -192,44 +192,64 @@ fn cast_shadow(intersect: &Intersect, light: &Box<dyn Light + Sync>, objects: &[
     shadow_intensity
 }
 
-fn interpolate_color(start: (u8, u8, u8), end: (u8, u8, u8), ratio: f32) -> (u8, u8, u8) {
-    (
-        (start.0 as f32 * (1.0 - ratio) + end.0 as f32 * ratio) as u8,
-        (start.1 as f32 * (1.0 - ratio) + end.1 as f32 * ratio) as u8,
-        (start.2 as f32 * (1.0 - ratio) + end.2 as f32 * ratio) as u8,
-    )
-}
-
 fn calculate_background_color(day_angle: f32) -> Color {
-    const DAY_START: f32 = 0.0;
-    const DAY_MID: f32 = PI / 3.0;
-    const DAY_END: f32 = 2.0 * PI / 3.0;
-    const NIGHT_START: f32 = 3.0 * PI / 2.0;
+    let angle = day_angle;
 
-    // COLORS
-    const DARK_BLUE: (u8, u8, u8) = (0, 0, 50);
-    const DAWN_ORANGE: (u8, u8, u8) = (237, 135, 88);
-    const DAY_BLUE: (u8, u8, u8) = (135, 206, 250);
+    const DAY_START: f32 = 0.0;                           // Amanecer
+    const DAY_MID: f32 = std::f32::consts::PI / 3.0;     // Medio día (reducido)
+    const DAY_END: f32 = std::f32::consts::PI * 2.0 / 3.0; // Atardecer (reducido)
+    const NIGHT_START: f32 = DAY_END + 2.0;               // Inicio de la Noche   
 
-    let (r, g, b) = if day_angle >= DAY_START && day_angle < DAY_MID {
-        let ratio = day_angle / DAY_MID;
+    let r: u8;
+    let g: u8;
+    let b: u8;
+
+    if angle >= DAY_START && angle < DAY_MID {
+        // Gradiente de azul oscuro a amarillo-naranja y luego a celeste (Amanecer)
+        let ratio = angle / (DAY_MID - DAY_START);
+        
+        // De azul oscuro (0) a naranja (255) a celeste (135)
         if ratio < 0.5 {
-            interpolate_color(DARK_BLUE, DAWN_ORANGE, ratio * 2.0)
+            let sub_ratio = ratio * 2.0; // Escalamos a [0, 1]
+            r = (0.0 * (1.0 - sub_ratio) + 220.0 * sub_ratio) as u8; // Azul oscuro a naranja (220)
+            g = (0.0 * (1.0 - sub_ratio) + 162.0 * sub_ratio) as u8; // Azul oscuro a naranja (162)
+            b = (50.0 * (1.0 - sub_ratio) + 30.0 * sub_ratio) as u8; // Azul oscuro a naranja (30)
         } else {
-            interpolate_color(DAWN_ORANGE, DAY_BLUE, (ratio - 0.5) * 2.0)
+            let sub_ratio = (ratio - 0.5) * 2.0; // Escalamos a [0, 1]
+            r = (220.0 * (1.0 - sub_ratio) + 135.0 * sub_ratio) as u8; // Naranja (220) a celeste (135)
+            g = (162.0 * (1.0 - sub_ratio) + 206.0 * sub_ratio) as u8; // Naranja (162) a celeste (206)
+            b = (30.0 * (1.0 - sub_ratio) + 250.0 * sub_ratio) as u8; // Naranja (30) a celeste (250)
         }
-    } else if day_angle >= DAY_MID && day_angle < DAY_END {
-        DAY_BLUE  // Midday color
-    } else if day_angle >= DAY_END && day_angle < NIGHT_START {
-        let ratio = (day_angle - DAY_END) / (NIGHT_START - DAY_END);
+
+    } else if angle >= DAY_MID && angle < DAY_END {
+        // Día: Celeste
+        r = 135;
+        g = 206;
+        b = 250;
+
+    } else if angle >= DAY_END && angle < NIGHT_START {
+        // Gradiente de celeste a amarillo-naranja y luego a azul oscuro (Atardecer)
+        let ratio = (angle - DAY_END) / (NIGHT_START - DAY_END);
+        
+        // De celeste (135) a amarillo-naranja (255)
         if ratio < 0.5 {
-            interpolate_color(DAY_BLUE, DAWN_ORANGE, ratio * 2.0)
+            let sub_ratio = ratio * 2.0; // Escalamos a [0, 1]
+            r = (135.0 * (1.0 - sub_ratio) + 220.0 * sub_ratio) as u8; // Celeste a naranja (220)
+            g = (206.0 * (1.0 - sub_ratio) + 162.0 * sub_ratio) as u8; // Celeste a naranja (162)
+            b = (250.0 * (1.0 - sub_ratio) + 30.0 * sub_ratio) as u8; // Celeste a naranja (30)
         } else {
-            interpolate_color(DAWN_ORANGE, DARK_BLUE, (ratio - 0.5) * 2.0)
+            let sub_ratio = (ratio - 0.5) * 2.0; // Escalamos a [0, 1]
+            r = (220.0 * (1.0 - sub_ratio) + 0.0 * sub_ratio) as u8; // Naranja (220) a azul oscuro (0)
+            g = (162.0 * (1.0 - sub_ratio) + 0.0 * sub_ratio) as u8; // Naranja (162) a azul oscuro (0)
+            b = (30.0 * (1.0 - sub_ratio) + 50.0 * sub_ratio) as u8; // Naranja (30) a azul oscuro (50)
         }
+
     } else {
-        DARK_BLUE  // Night color
-    };
+        // Noche: Azul oscuro
+        r = 0; 
+        g = 0; 
+        b = 50; // Azul oscuro
+    }
 
-    Color::new(r, g, b)
+    Color::new(r , g , b )
 }
